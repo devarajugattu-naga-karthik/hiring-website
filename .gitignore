@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+
+.env
+
+hiring.db
+
+uploads/*
+generated_pdfs/*
+
+*.log

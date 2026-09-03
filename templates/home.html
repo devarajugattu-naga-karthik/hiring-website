@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Company Hiring Portal</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #222;
+        }
+
+        nav {
+            background: #123c69;
+            color: white;
+            padding: 18px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav h2 {
+            font-size: 24px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 25px;
+        }
+
+        .hero {
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .hero-content {
+            max-width: 700px;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            color: #123c69;
+            margin-bottom: 20px;
+        }
+
+        .hero p {
+            font-size: 20px;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 35px;
+        }
+
+        .buttons a {
+            display: inline-block;
+            padding: 14px 28px;
+            margin: 8px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .apply-btn {
+            background: #123c69;
+            color: white;
+        }
+
+        .admin-btn {
+            background: white;
+            color: #123c69;
+            border: 2px solid #123c69;
+        }
+
+        .features {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            padding: 40px;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background: white;
+            width: 280px;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+        }
+
+        .card h3 {
+            color: #123c69;
+            margin-bottom: 12px;
+        }
+
+        .card p {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        footer {
+            background: #123c69;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <h2>Company Hiring Portal</h2>
+
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/login">Applicant Login</a>
+            <a href="/admin-login">Admin</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+
+        <div class="hero-content">
+
+            <h1>Build Your Career With Us</h1>
+
+            <p>
+                Welcome to our official hiring portal.
+                Apply for exciting career opportunities,
+                upload your resume, and track your application.
+            </p>
+
+            <div class="buttons">
+
+                <a href="/register" class="apply-btn">
+                    Apply Now
+                </a>
+
+                <a href="/admin-login">
+    Owner / Admin Login
+</a>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="features">
+
+        <div class="card">
+            <h3>Easy Application</h3>
+            <p>
+                Complete your application online
+                in just a few simple steps.
+            </p>
+        </div>
+
+        <div class="card">
+            <h3>Resume Upload</h3>
+            <p>
+                Upload your latest resume along
+                with your application.
+            </p>
+        </div>
+
+        <div class="card">
+            <h3>Track Application</h3>
+            <p>
+                Check your application status
+                after submitting.
+            </p>
+        </div>
+
+    </section>
+
+    <footer>
+        <p>© 2026 Company Hiring Portal. All Rights Reserved.</p>
+    </footer>
+
+</body>
+</html>

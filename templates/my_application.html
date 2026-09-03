@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Application</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #222;
+        }
+
+        nav {
+            background: #123c69;
+            color: white;
+            padding: 18px 50px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav h2 {
+            font-size: 22px;
+        }
+
+        .logout {
+            color: white;
+            text-decoration: none;
+            background: #d9534f;
+
+            padding: 10px 18px;
+            border-radius: 5px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .page-title {
+            margin-bottom: 25px;
+        }
+
+        .page-title h1 {
+            color: #123c69;
+            margin-bottom: 8px;
+        }
+
+        .page-title p {
+            color: #666;
+        }
+
+        .application-box {
+            background: white;
+            padding: 30px;
+
+            border-radius: 10px;
+
+            box-shadow:
+                0 3px 15px rgba(0,0,0,0.08);
+
+            margin-bottom: 25px;
+        }
+
+        .application-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            border-bottom: 1px solid #ddd;
+
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+
+        .application-header h2 {
+            color: #123c69;
+        }
+
+        .application-id {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .status {
+            display: inline-block;
+
+            padding: 8px 16px;
+
+            border-radius: 20px;
+
+            background: #fff3cd;
+            color: #856404;
+
+            font-weight: bold;
+        }
+
+        .details {
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap: 20px;
+        }
+
+        .detail {
+            padding: 15px;
+
+            background: #f8f9fa;
+
+            border-radius: 6px;
+        }
+
+        .detail label {
+            display: block;
+
+            font-size: 13px;
+
+            color: #777;
+
+            margin-bottom: 6px;
+
+            font-weight: bold;
+        }
+
+        .detail span {
+            font-size: 16px;
+
+            color: #222;
+
+            word-break: break-word;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+
+        .resume-section {
+            margin-top: 25px;
+
+            padding-top: 25px;
+
+            border-top: 1px solid #ddd;
+        }
+
+        .resume-section h3 {
+            color: #123c69;
+
+            margin-bottom: 15px;
+        }
+
+        .resume-name {
+            display: inline-block;
+
+            margin-right: 15px;
+
+            color: #555;
+        }
+
+        .btn {
+            display: inline-block;
+
+            padding: 11px 18px;
+
+            background: #123c69;
+
+            color: white;
+
+            text-decoration: none;
+
+            border-radius: 6px;
+
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background: #0d2d50;
+        }
+
+        .back {
+            display: inline-block;
+
+            margin-top: 5px;
+
+            color: #123c69;
+
+            text-decoration: none;
+
+            font-weight: bold;
+        }
+
+        .no-application {
+            background: white;
+
+            padding: 50px;
+
+            text-align: center;
+
+            border-radius: 10px;
+
+            box-shadow:
+                0 3px 15px rgba(0,0,0,0.08);
+        }
+
+        .no-application h2 {
+            color: #123c69;
+
+            margin-bottom: 15px;
+        }
+
+        .no-application p {
+            color: #666;
+
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 700px) {
+
+            nav {
+                padding: 18px 20px;
+            }
+
+            .container {
+                margin: 20px auto;
+            }
+
+            .application-box {
+                padding: 20px;
+            }
+
+            .details {
+                grid-template-columns: 1fr;
+            }
+
+            .full {
+                grid-column: auto;
+            }
+
+            .application-header {
+                flex-direction: column;
+                align-items: flex-start;
+
+                gap: 15px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <!-- Navigation -->
+
+    <nav>
+
+        <h2>
+            Company Hiring Portal
+        </h2>
+
+        <a
+            href="/logout"
+            class="logout">
+            Logout
+        </a>
+
+    </nav>
+
+
+    <div class="container">
+
+        <div class="page-title">
+
+            <h1>
+                My Application
+            </h1>
+
+            <p>
+                View the details of your submitted job application.
+            </p>
+
+        </div>
+
+
+        {% if application %}
+
+        <div class="application-box">
+
+            <div class="application-header">
+
+                <div>
+
+                    <h2>
+                        {{ application["position"] }}
+                    </h2>
+
+                    <p class="application-id">
+                        Application ID:
+                        #{{ application["id"] }}
+                    </p>
+
+                </div>
+
+                <div>
+
+                    <span class="status">
+                        {{ application["status"] }}
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="details">
+
+                <!-- Name -->
+
+                <div class="detail">
+
+                    <label>
+                        Full Name
+                    </label>
+
+                    <span>
+                        {{ application["name"] }}
+                    </span>
+
+                </div>
+
+
+                <!-- Email -->
+
+                <div class="detail">
+
+                    <label>
+                        Email
+                    </label>
+
+                    <span>
+                        {{ application["email"] }}
+                    </span>
+
+                </div>
+
+
+                <!-- Mobile -->
+
+                <div class="detail">
+
+                    <label>
+                        Mobile Number
+                    </label>
+
+                    <span>
+                        {{ application["mobile"] }}
+                    </span>
+
+                </div>
+
+
+                <!-- DOB -->
+
+                <div class="detail">
+
+                    <label>
+                        Date of Birth
+                    </label>
+
+                    <span>
+                        {{ application["dob"] }}
+                    </span>
+
+                </div>
+
+
+                <!-- Gender -->
+
+                <div class="detail">
+
+                    <label>
+                        Gender
+                    </label>
+
+                    <span>
+                        {{ application["gender"] }}
+                    </span>
+
+                </div>
+
+
+                <!-- Qualification -->
+
+                <div class="detail">
+
+                    <label>
+                        Highest Qualification
+                    </label>
+
+                    <span>
+                        {{ application["qualification"] }}
+                    </span>
+
+                </div>
+
+
+                <!-- Branch -->
+
+                <div class="detail">
+
+                    <label>
+                        Branch / Specialization
+                    </label>
+
+                    <span>
+                        {{ application["branch"] }}
+                    </span>
+
+                </div>
+
+
+                <!-- Graduation Year -->
+
+                <div class="detail">
+
+                    <label>
+                        Graduation Year
+                    </label>
+
+                    <span>
+                        {{ application["graduation_year"] }}
+                    </span>
+
+                </div>
+
+
+                <!-- Skills -->
+
+                <div class="detail full">
+
+                    <label>
+                        Technical Skills
+                    </label>
+
+                    <span>
+                        {{ application["skills"] }}
+                    </span>
+
+                </div>
+
+
+                <!-- Address -->
+
+                <div class="detail full">
+
+                    <label>
+                        Address
+                    </label>
+
+                    <span>
+                        {{ application["address"] }}
+                    </span>
+
+                </div>
+
+
+                <!-- Submission Date -->
+
+                <div class="detail">
+
+                    <label>
+                        Application Submitted
+                    </label>
+
+                    <span>
+                        {{ application["created_at"] }}
+                    </span>
+
+                </div>
+
+
+                <!-- Status -->
+
+                <div class="detail">
+
+                    <label>
+                        Application Status
+                    </label>
+
+                    <span>
+                        {{ application["status"] }}
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- Resume -->
+
+            <div class="resume-section">
+
+                <h3>
+                    Resume
+                </h3>
+
+                <span class="resume-name">
+
+                    {{ application["resume_filename"] }}
+
+                </span>
+
+                <a
+                    href="{{ url_for('download_resume', application_id=application['id']) }}"
+                    class="btn">
+
+                    Download Resume
+
+                </a>
+
+            </div>
+
+        </div>
+
+
+        {% else %}
+
+        <div class="no-application">
+
+            <h2>
+                No Application Found
+            </h2>
+
+            <p>
+                You have not submitted a job application yet.
+            </p>
+
+            <a
+                href="/apply"
+                class="btn">
+
+                Apply Now
+
+            </a>
+
+        </div>
+
+        {% endif %}
+
+
+        <a
+            href="/applicant-home"
+            class="back">
+
+            ← Back to Dashboard
+
+        </a>
+
+    </div>
+
+</body>
+
+</html>
