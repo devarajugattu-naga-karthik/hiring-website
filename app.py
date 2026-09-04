@@ -76,13 +76,14 @@ app.secret_key = os.environ.get(
     "SECRET_KEY",
     "change-this-secret-key-before-production"
 )
-
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
-# Local development
-app.config["SESSION_COOKIE_SECURE"] = False
+app.config["SESSION_COOKIE_SECURE"] = (
+    os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
+)
 
+app.permanent_session_lifetime = 60 * 60 * 24
 app.permanent_session_lifetime = 60 * 60 * 24
 
 
