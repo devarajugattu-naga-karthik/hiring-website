@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Trekso | Verify Email</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<nav class="main-nav">
+
+    <a href="/" class="brand">
+
+        <img
+            src="{{ url_for(
+                'static',
+                filename='images/trekso-logo.png'
+            ) }}"
+            alt="Trekso Logo"
+        >
+
+    </a>
+
+    <div class="nav-links">
+
+        <a href="{{ url_for('login') }}"
+           class="nav-link nav-applicant">
+            Applicant Login
+        </a>
+
+    </div>
+
+</nav>
+
+
+<div class="auth-page">
+
+    <div class="auth-card">
+
+        <div class="auth-logo">
+
+            <img
+                src="{{ url_for(
+                    'static',
+                    filename='images/trekso-logo.png'
+                ) }}"
+                alt="Trekso"
+            >
+
+        </div>
+
+
+        <h1>
+            Verify Your Email
+        </h1>
+
+
+        <p class="auth-subtitle">
+            Enter the 6-digit OTP sent to your email address.
+        </p>
+
+
+        {% if error %}
+
+        <div class="error-message">
+            {{ error }}
+        </div>
+
+        {% endif %}
+
+
+        <form
+            method="POST"
+            action="{{ url_for('verify_email') }}"
+        >
+
+            <div class="form-group">
+
+                <label for="otp">
+                    Email OTP
+                </label>
+
+                <input
+                    type="text"
+                    id="otp"
+                    name="otp"
+                    class="form-control"
+                    placeholder="Enter 6-digit OTP"
+                    maxlength="6"
+                    minlength="6"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    pattern="[0-9]{6}"
+                    required
+                >
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="auth-submit"
+            >
+                Verify Email
+            </button>
+
+        </form>
+
+
+        <a
+            href="{{ url_for('register') }}"
+            class="auth-footer-link"
+        >
+            Register Again
+        </a>
+
+
+        <div class="security-note">
+
+            Your OTP is valid for 10 minutes.
+
+            <br><br>
+
+            After successful verification, you can login
+            and submit your Trekso job application.
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<footer class="site-footer">
+
+    © 2026 Trekso. All rights reserved.
+
+</footer>
+
+</body>
+
+</html>

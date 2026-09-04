@@ -33,10 +33,6 @@ def get_sqlite_connection():
 
 def get_db_connection():
 
-    # For now we continue using SQLite locally.
-    # Later, DATABASE_TYPE can be changed to mysql
-    # for the live Vercel deployment.
-
     if DATABASE_TYPE.lower() == "sqlite":
 
         return get_sqlite_connection()
@@ -56,9 +52,9 @@ def init_db():
     connection = get_db_connection()
 
 
-    # ------------------------------------------
-    # Users table
-    # ------------------------------------------
+    # ==================================================
+    # USERS TABLE
+    # ==================================================
 
     connection.execute(
         """
@@ -74,7 +70,7 @@ def init_db():
 
             password TEXT NOT NULL,
 
-            email_verified INTEGER DEFAULT 0,
+            email_verified INTEGER DEFAULT 1,
 
             mobile_verified INTEGER DEFAULT 0,
 
@@ -82,16 +78,58 @@ def init_db():
 
             mobile_otp TEXT,
 
-            otp_expiry TEXT
+            otp_expiry TEXT,
+
+            otp_attempts INTEGER DEFAULT 0,
+
+            created_at TIMESTAMP
+                DEFAULT CURRENT_TIMESTAMP
 
         )
         """
     )
 
 
-    # ------------------------------------------
-    # Applications table
-    # ------------------------------------------
+    # ==================================================
+    # PENDING REGISTRATIONS TABLE
+    #
+    # IMPORTANT:
+    # These are NOT applicant accounts.
+    # They exist only while OTP verification
+    # is pending.
+    # ==================================================
+
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pending_registrations (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            name TEXT NOT NULL,
+
+            email TEXT UNIQUE NOT NULL,
+
+            mobile TEXT NOT NULL,
+
+            password_hash TEXT NOT NULL,
+
+            otp TEXT NOT NULL,
+
+            otp_expiry TEXT NOT NULL,
+
+            otp_attempts INTEGER DEFAULT 0,
+
+            created_at TIMESTAMP
+                DEFAULT CURRENT_TIMESTAMP
+
+        )
+        """
+    )
+
+
+    # ==================================================
+    # APPLICATIONS TABLE
+    # ==================================================
 
     connection.execute(
         """
@@ -114,8 +152,10 @@ def init_db():
             gender TEXT NOT NULL,
 
             qualification TEXT NOT NULL,
+
             college_name TEXT NOT NULL,
-university_name TEXT NOT NULL,
+
+            university_name TEXT NOT NULL,
 
             branch TEXT NOT NULL,
 
@@ -154,14 +194,14 @@ university_name TEXT NOT NULL,
 # DATABASE UPGRADE
 # ==================================================
 
-
 def upgrade_database():
 
     connection = get_db_connection()
 
-    # ------------------------------------------
-    # Check users table columns
-    # ------------------------------------------
+
+    # ==================================================
+    # USERS TABLE
+    # ==================================================
 
     user_columns = connection.execute(
         "PRAGMA table_info(users)"
@@ -172,45 +212,84 @@ def upgrade_database():
         for column in user_columns
     ]
 
-    # Add email_verified if missing
+
     if "email_verified" not in user_column_names:
-        connection.execute("""
-            ALTER TABLE users
-            ADD COLUMN email_verified INTEGER DEFAULT 0
-        """)
 
-    # Add mobile_verified if missing
+        connection.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN email_verified
+            INTEGER DEFAULT 1
+            """
+        )
+
+
     if "mobile_verified" not in user_column_names:
-        connection.execute("""
-            ALTER TABLE users
-            ADD COLUMN mobile_verified INTEGER DEFAULT 0
-        """)
 
-    # Add email_otp if missing
+        connection.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN mobile_verified
+            INTEGER DEFAULT 0
+            """
+        )
+
+
     if "email_otp" not in user_column_names:
-        connection.execute("""
+
+        connection.execute(
+            """
             ALTER TABLE users
             ADD COLUMN email_otp TEXT
-        """)
+            """
+        )
 
-    # Add mobile_otp if missing
+
     if "mobile_otp" not in user_column_names:
-        connection.execute("""
+
+        connection.execute(
+            """
             ALTER TABLE users
             ADD COLUMN mobile_otp TEXT
-        """)
+            """
+        )
 
-    # Add otp_expiry if missing
+
     if "otp_expiry" not in user_column_names:
-        connection.execute("""
+
+        connection.execute(
+            """
             ALTER TABLE users
             ADD COLUMN otp_expiry TEXT
-        """)
+            """
+        )
 
 
-    # ------------------------------------------
-    # Check applications table columns
-    # ------------------------------------------
+    if "otp_attempts" not in user_column_names:
+
+        connection.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN otp_attempts
+            INTEGER DEFAULT 0
+            """
+        )
+
+
+    if "created_at" not in user_column_names:
+
+        connection.execute(
+            """
+            ALTER TABLE users
+            ADD COLUMN created_at
+            TIMESTAMP
+            """
+        )
+
+
+    # ==================================================
+    # APPLICATIONS TABLE
+    # ==================================================
 
     application_columns = connection.execute(
         "PRAGMA table_info(applications)"
@@ -221,43 +300,55 @@ def upgrade_database():
         for column in application_columns
     ]
 
-    # Add candidate_type if missing
+
     if "candidate_type" not in application_column_names:
-        connection.execute("""
+
+        connection.execute(
+            """
             ALTER TABLE applications
             ADD COLUMN candidate_type
             TEXT DEFAULT 'Fresher'
-        """)
+            """
+        )
 
-    # Add experience if missing
+
     if "experience" not in application_column_names:
-        connection.execute("""
+
+        connection.execute(
+            """
             ALTER TABLE applications
             ADD COLUMN experience TEXT
-        """)
+            """
+        )
 
-    # Add college_name if missing
+
     if "college_name" not in application_column_names:
-        connection.execute("""
-            ALTER TABLE applications
-            ADD COLUMN college_name TEXT DEFAULT ''
-        """)
 
-    # Add university_name if missing
+        connection.execute(
+            """
+            ALTER TABLE applications
+            ADD COLUMN college_name
+            TEXT DEFAULT ''
+            """
+        )
+
+
     if "university_name" not in application_column_names:
-        connection.execute("""
+
+        connection.execute(
+            """
             ALTER TABLE applications
-            ADD COLUMN university_name TEXT DEFAULT ''
-        """)
+            ADD COLUMN university_name
+            TEXT DEFAULT ''
+            """
+        )
 
-
-    # ------------------------------------------
-    # Save changes
-    # ------------------------------------------
 
     connection.commit()
 
     connection.close()
+
+
 # ==================================================
 # RUN DIRECTLY
 # ==================================================
