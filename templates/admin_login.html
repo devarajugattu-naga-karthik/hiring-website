@@ -4,213 +4,164 @@
 <head>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Admin Login</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-    <style>
+    <title>Teckso | Admin Login</title>
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f7fb;
-
-            min-height: 100vh;
-
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .login-box {
-            width: 400px;
-
-            background: white;
-
-            padding: 40px;
-
-            border-radius: 10px;
-
-            box-shadow:
-                0 4px 20px rgba(0,0,0,0.1);
-        }
-
-        .logo {
-            text-align: center;
-
-            font-size: 45px;
-
-            margin-bottom: 10px;
-        }
-
-        h1 {
-            text-align: center;
-
-            color: #123c69;
-
-            margin-bottom: 8px;
-        }
-
-        .subtitle {
-            text-align: center;
-
-            color: #777;
-
-            margin-bottom: 30px;
-        }
-
-        label {
-            display: block;
-
-            font-weight: bold;
-
-            margin-bottom: 8px;
-        }
-
-        input {
-            width: 100%;
-
-            padding: 13px;
-
-            border: 1px solid #ccc;
-
-            border-radius: 6px;
-
-            font-size: 15px;
-
-            margin-bottom: 20px;
-        }
-
-        input:focus {
-            border-color: #123c69;
-
-            outline: none;
-        }
-
-        button {
-            width: 100%;
-
-            padding: 13px;
-
-            background: #123c69;
-
-            color: white;
-
-            border: none;
-
-            border-radius: 6px;
-
-            font-size: 16px;
-
-            font-weight: bold;
-
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #0d2d50;
-        }
-
-        .error {
-            background: #f8d7da;
-
-            color: #842029;
-
-            padding: 12px;
-
-            border-radius: 6px;
-
-            margin-bottom: 20px;
-
-            text-align: center;
-        }
-
-        .back {
-            display: block;
-
-            text-align: center;
-
-            margin-top: 20px;
-
-            color: #123c69;
-
-            text-decoration: none;
-
-            font-weight: bold;
-        }
-
-    </style>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 
 </head>
 
 <body>
 
-    <div class="login-box">
+<nav class="main-nav">
 
-        <div class="logo">
+    <a href="/" class="brand">
+
+        <img
+            src="{{ url_for('static', filename='images/teckso-logo.png') }}"
+            alt="Teckso Logo"
+        >
+
+    </a>
+
+    <div class="nav-links">
+
+        <a
+            href="{{ url_for('login') }}"
+            class="nav-link nav-applicant"
+        >
+            Applicant Login
+        </a>
+
+        <a
+            href="{{ url_for('register') }}"
+            class="nav-link nav-register"
+        >
+            Register
+        </a>
+
+    </div>
+
+</nav>
+
+
+<div class="auth-page">
+
+    <div class="auth-card">
+
+        <div class="auth-logo">
+
+            <img
+                src="{{ url_for('static', filename='images/teckso-logo.png') }}"
+                alt="Teckso Logo"
+            >
+
+        </div>
+
+
+        <div class="auth-icon">
             🔐
         </div>
+
 
         <h1>
             Admin Login
         </h1>
 
-        <p class="subtitle">
-            Company Hiring Portal
+
+        <p class="auth-subtitle">
+            Teckso Hiring Portal
         </p>
+
 
         {% if error %}
 
-        <div class="error">
+        <div class="error-message">
             {{ error }}
         </div>
 
         {% endif %}
 
-        <form method="POST" action="/admin-login">
 
-            <label for="username">
-                Admin Username
-            </label>
+        <form
+            method="POST"
+            action="{{ url_for('admin_login') }}"
+        >
 
-            <input
-                type="text"
-                id="username"
-                name="username"
-                placeholder="Enter admin username"
-                required
+            <div class="form-group">
+
+                <label for="username">
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    class="form-control"
+                    placeholder="Enter admin username"
+                    required
+                    autocomplete="username"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="form-control"
+                    placeholder="Enter admin password"
+                    required
+                    autocomplete="current-password"
+                >
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="auth-submit"
             >
-
-            <label for="password">
-                Admin Password
-            </label>
-
-            <input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Enter admin password"
-                required
-            >
-
-            <button type="submit">
-                Login as Admin
+                Login to Admin Dashboard
             </button>
 
         </form>
 
+
+        <div class="security-note">
+            Authorized Teckso administrators only.
+        </div>
+
+
         <a
             href="/"
-            class="back">
-            ← Back to Home
+            class="auth-footer-link"
+        >
+            ← Back to Teckso Careers
         </a>
 
     </div>
+
+</div>
+
+
+<footer class="site-footer">
+
+    © 2026 Teckso. All rights reserved.
+
+</footer>
 
 </body>
 

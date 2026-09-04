@@ -20,111 +20,87 @@
 
         body {
             font-family: Arial, Helvetica, sans-serif;
-            background: #f5f8fc;
-            color: #1f2937;
+            background: #ffffff;
+            color: #111111;
         }
-
 
         /* ==========================================
            NAVBAR
            ========================================== */
 
         nav {
-            height: 76px;
+            height: 82px;
             background: #ffffff;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 7%;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            padding: 0 6%;
+            border-bottom: 1px solid #eeeeee;
             position: sticky;
             top: 0;
             z-index: 1000;
         }
 
-
-        /* Logo */
-
         .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
             text-decoration: none;
         }
 
-        .logo-mark {
-            width: 42px;
-            height: 42px;
-            border-radius: 10px;
-            background: #123c69;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 21px;
-            font-weight: 800;
+        .logo img {
+            height: 58px;
+            width: auto;
+            object-fit: contain;
         }
-
-        .logo-text {
-            font-size: 25px;
-            font-weight: 800;
-            color: #123c69;
-            letter-spacing: 0.5px;
-        }
-
-
-        /* Navigation links */
 
         .nav-links {
             display: flex;
             align-items: center;
             gap: 10px;
-            flex-wrap: wrap;
         }
 
         .nav-btn {
             text-decoration: none;
-            padding: 10px 16px;
+            padding: 11px 17px;
             border-radius: 7px;
-            font-weight: 600;
             font-size: 14px;
+            font-weight: 700;
             transition: 0.2s ease;
         }
 
-        .nav-btn:hover {
-            transform: translateY(-1px);
-        }
-
-        .login-btn {
-            color: #123c69;
-            border: 1px solid #123c69;
+        .applicant-btn {
+            color: #111111;
+            border: 1px solid #dddddd;
             background: #ffffff;
         }
 
         .register-btn {
             color: #ffffff;
-            background: #123c69;
-            border: 1px solid #123c69;
+            background: #ff4b00;
+            border: 1px solid #ff4b00;
         }
 
         .admin-btn {
-            color: #123c69;
-            background: #eef5fc;
-            border: 1px solid #d5e3f2;
+            color: #111111;
+            background: #f5f5f5;
+            border: 1px solid #dddddd;
         }
 
-        .admin-btn:hover {
-            background: #dceafa;
+        .nav-btn:hover {
+            transform: translateY(-2px);
         }
 
+        .register-btn:hover {
+            background: #e94300;
+        }
 
         /* ==========================================
-           HERO SECTION
+           HERO
            ========================================== */
 
         .hero {
-            min-height: 610px;
-            padding: 80px 7%;
+            min-height: 650px;
+            padding: 85px 7%;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -132,47 +108,44 @@
             background:
                 linear-gradient(
                     120deg,
-                    #eef5fc,
+                    #fff7f2,
                     #ffffff
                 );
         }
 
         .hero-content {
-            max-width: 640px;
+            max-width: 650px;
         }
 
         .tag {
             display: inline-block;
-            background: #e1edf9;
-            color: #123c69;
             padding: 8px 16px;
+            background: #fff0e9;
+            color: #e94300;
             border-radius: 30px;
             font-size: 13px;
             font-weight: 800;
-            letter-spacing: 0.5px;
-            margin-bottom: 20px;
+            letter-spacing: 1px;
+            margin-bottom: 22px;
         }
 
         .hero h1 {
-            font-size: 56px;
-            line-height: 1.08;
-            color: #123c69;
+            font-size: 58px;
+            line-height: 1.05;
+            color: #111111;
             margin-bottom: 22px;
         }
 
         .hero h1 span {
-            color: #2563eb;
+            color: #ff4b00;
         }
 
         .hero p {
             font-size: 19px;
-            line-height: 1.75;
-            color: #5b6472;
+            line-height: 1.8;
+            color: #555555;
             margin-bottom: 30px;
         }
-
-
-        /* Hero buttons */
 
         .hero-buttons {
             display: flex;
@@ -184,22 +157,22 @@
         .secondary-btn {
             display: inline-block;
             text-decoration: none;
-            padding: 14px 24px;
+            padding: 14px 25px;
             border-radius: 8px;
             font-size: 16px;
-            font-weight: 700;
+            font-weight: 800;
             transition: 0.2s ease;
         }
 
         .primary-btn {
-            background: #123c69;
-            color: #ffffff;
+            background: #ff4b00;
+            color: white;
         }
 
         .secondary-btn {
-            background: #ffffff;
-            color: #123c69;
-            border: 1px solid #123c69;
+            background: white;
+            color: #111111;
+            border: 1px solid #d8d8d8;
         }
 
         .primary-btn:hover,
@@ -207,194 +180,166 @@
             transform: translateY(-2px);
         }
 
-
         /* ==========================================
-           HERO VISUAL
+           HERO LOGO / VISUAL
            ========================================== */
 
         .hero-visual {
             width: 430px;
             max-width: 100%;
-        }
-
-        .mobility-card {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow:
-                0 15px 40px rgba(18, 60, 105, 0.12);
-        }
-
-        .mobility-title {
-            color: #123c69;
-            font-size: 21px;
-            font-weight: 700;
-            margin-bottom: 25px;
-        }
-
-
-        /* Route */
-
-        .route {
             display: flex;
-            align-items: center;
-            gap: 15px;
-            margin: 16px 0;
+            justify-content: center;
         }
 
-        .location-dot {
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            background: #2563eb;
-            flex-shrink: 0;
+        .logo-card {
+            width: 100%;
+            background: white;
+            padding: 45px 35px;
+            border-radius: 24px;
+            box-shadow:
+                0 18px 45px rgba(0, 0, 0, 0.10);
+            text-align: center;
+            border: 1px solid #f0f0f0;
         }
 
-        .route-line {
-            width: 3px;
-            height: 38px;
-            background: #c7d4e2;
-            margin-left: 6px;
+        .logo-card img {
+            width: 100%;
+            max-width: 330px;
+            height: auto;
         }
 
-        .location-text {
-            color: #374151;
-            font-weight: 600;
+        .logo-card-text {
+            margin-top: 22px;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #666666;
         }
-
-        .mobility-info {
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-            color: #6b7280;
-            line-height: 1.65;
-            font-size: 14px;
-        }
-
 
         /* ==========================================
-           ABOUT TECKSO
+           ABOUT
            ========================================== */
 
         .about {
-            padding: 85px 7%;
-            background: #ffffff;
+            padding: 90px 7%;
+            background: white;
             text-align: center;
         }
 
         .section-label {
-            color: #2563eb;
+            color: #ff4b00;
             font-size: 13px;
             font-weight: 800;
-            text-transform: uppercase;
             letter-spacing: 1.5px;
+            text-transform: uppercase;
             margin-bottom: 10px;
         }
 
         .about h2 {
-            color: #123c69;
-            font-size: 36px;
+            color: #111111;
+            font-size: 37px;
             margin-bottom: 20px;
         }
 
         .about-description {
-            max-width: 790px;
+            max-width: 800px;
             margin: auto;
-            color: #626b78;
             font-size: 17px;
-            line-height: 1.85;
+            line-height: 1.9;
+            color: #626262;
         }
-
 
         /* ==========================================
            WHY TECKSO
            ========================================== */
 
         .values {
-            padding: 80px 7%;
-            background: #f5f8fc;
+            padding: 85px 7%;
+            background: #f8f8f8;
         }
 
         .values-heading {
             text-align: center;
-            margin-bottom: 45px;
+            margin-bottom: 48px;
         }
 
         .values-heading h2 {
-            color: #123c69;
-            font-size: 35px;
-            margin-top: 8px;
+            font-size: 36px;
+            color: #111111;
         }
 
         .value-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
             max-width: 1100px;
             margin: auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
         }
 
         .value-card {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
+            background: white;
+            padding: 32px;
+            border-radius: 14px;
+            border: 1px solid #ededed;
+            transition: 0.2s ease;
+        }
+
+        .value-card:hover {
+            transform: translateY(-4px);
             box-shadow:
-                0 4px 18px rgba(0, 0, 0, 0.05);
+                0 12px 30px rgba(0, 0, 0, 0.08);
         }
 
         .value-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 10px;
-            background: #e7f0fa;
-            color: #123c69;
+            width: 54px;
+            height: 54px;
+            border-radius: 12px;
+            background: #fff0e9;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 23px;
+            font-size: 24px;
             margin-bottom: 18px;
         }
 
         .value-card h3 {
-            color: #123c69;
-            margin-bottom: 10px;
+            color: #111111;
             font-size: 20px;
+            margin-bottom: 10px;
         }
 
         .value-card p {
-            color: #6b7280;
+            color: #686868;
             line-height: 1.7;
         }
-
 
         /* ==========================================
            CAREERS CTA
            ========================================== */
 
         .careers {
-            padding: 90px 7%;
-            background: #123c69;
+            padding: 95px 7%;
+            background: #111111;
             text-align: center;
-            color: #ffffff;
+            color: white;
         }
 
         .careers h2 {
-            font-size: 39px;
+            font-size: 40px;
             margin-bottom: 15px;
         }
 
         .careers p {
             max-width: 680px;
             margin: 0 auto 30px;
-            line-height: 1.75;
-            color: #dbe8f5;
+            color: #cccccc;
+            line-height: 1.8;
             font-size: 17px;
         }
 
         .career-btn {
             display: inline-block;
-            background: #ffffff;
-            color: #123c69;
+            background: #ff4b00;
+            color: white;
             padding: 14px 28px;
             border-radius: 8px;
             text-decoration: none;
@@ -403,25 +348,24 @@
         }
 
         .career-btn:hover {
+            background: #e94300;
             transform: translateY(-2px);
         }
-
 
         /* ==========================================
            FOOTER
            ========================================== */
 
         footer {
-            background: #0c2947;
-            color: #dbe8f5;
+            background: #080808;
+            color: #aaaaaa;
             text-align: center;
-            padding: 25px 7%;
-            font-size: 14px;
+            padding: 24px 7%;
+            font-size: 13px;
         }
 
-
         /* ==========================================
-           RESPONSIVE DESIGN
+           RESPONSIVE
            ========================================== */
 
         @media (max-width: 950px) {
@@ -429,8 +373,6 @@
             .hero {
                 flex-direction: column;
                 text-align: center;
-                padding-top: 65px;
-                padding-bottom: 65px;
             }
 
             .hero-buttons {
@@ -438,48 +380,45 @@
             }
 
             .hero h1 {
-                font-size: 45px;
+                font-size: 47px;
             }
 
             .hero-visual {
-                width: 520px;
+                width: 500px;
             }
 
             .value-grid {
                 grid-template-columns: 1fr;
                 max-width: 550px;
             }
-
         }
-
 
         @media (max-width: 650px) {
 
             nav {
                 height: auto;
-                min-height: 76px;
                 padding: 14px 20px;
                 gap: 15px;
                 flex-wrap: wrap;
             }
 
+            .logo img {
+                height: 52px;
+            }
+
             .nav-links {
                 width: 100%;
                 justify-content: center;
+                flex-wrap: wrap;
             }
 
             .nav-btn {
-                padding: 8px 11px;
+                padding: 9px 11px;
                 font-size: 12px;
             }
 
-            .logo-text {
-                font-size: 22px;
-            }
-
             .hero {
-                padding-left: 20px;
-                padding-right: 20px;
+                padding: 65px 20px;
             }
 
             .hero h1 {
@@ -504,13 +443,8 @@
             .about h2,
             .values-heading h2,
             .careers h2 {
-                font-size: 29px;
+                font-size: 30px;
             }
-
-            .value-grid {
-                gap: 18px;
-            }
-
         }
 
     </style>
@@ -527,39 +461,28 @@
 
 <nav>
 
+    <a href="/" class="logo">
 
-    <!-- TECKSO LOGO -->
-
-    <a
-        href="/"
-        class="logo"
-    >
-
-        <div class="logo-mark">
-            T
-        </div>
-
-        <div class="logo-text">
-            TECKSO
-        </div>
+        <img
+            src="{{ url_for('static', filename='images/teckso-logo.png') }}"
+            alt="Teckso Logo"
+        >
 
     </a>
 
 
-    <!-- NAVIGATION BUTTONS -->
-
     <div class="nav-links">
 
         <a
-            href="/login"
-            class="nav-btn login-btn"
+            href="{{ url_for('login') }}"
+            class="nav-btn applicant-btn"
         >
             Applicant Login
         </a>
 
 
         <a
-            href="/register"
+            href="{{ url_for('register') }}"
             class="nav-btn register-btn"
         >
             Register
@@ -567,7 +490,7 @@
 
 
         <a
-            href="/admin-login"
+            href="{{ url_for('admin_login') }}"
             class="nav-btn admin-btn"
         >
             Admin Login
@@ -586,8 +509,6 @@
 <section class="hero">
 
 
-    <!-- LEFT SIDE -->
-
     <div class="hero-content">
 
         <div class="tag">
@@ -603,24 +524,24 @@
 
 
         <p>
-            Join Teckso and help us create smarter
-            ways for people to connect, travel,
-            and move together.
+            Join Teckso and help us build technology
+            that connects people, journeys, and
+            opportunities.
         </p>
 
 
         <div class="hero-buttons">
 
             <a
-                href="/register"
+                href="{{ url_for('register') }}"
                 class="primary-btn"
             >
-                Apply for a Position
+                Explore Careers
             </a>
 
 
             <a
-                href="/login"
+                href="{{ url_for('login') }}"
                 class="secondary-btn"
             >
                 Applicant Login
@@ -631,70 +552,21 @@
     </div>
 
 
-
-    <!-- RIGHT SIDE -->
+    <!-- LOGO VISUAL -->
 
     <div class="hero-visual">
 
-        <div class="mobility-card">
+        <div class="logo-card">
 
+            <img
+                src="{{ url_for('static', filename='images/teckso-logo.png') }}"
+                alt="Teckso"
+            >
 
-            <div class="mobility-title">
-                Connecting Journeys
-            </div>
+            <div class="logo-card-text">
 
-
-            <!-- PLACE A -->
-
-            <div class="route">
-
-                <div class="location-dot"></div>
-
-                <div class="location-text">
-                    Place A
-                </div>
-
-            </div>
-
-
-            <div class="route-line"></div>
-
-
-            <!-- SHARED JOURNEY -->
-
-            <div class="route">
-
-                <div class="location-dot"></div>
-
-                <div class="location-text">
-                    Shared Journey
-                </div>
-
-            </div>
-
-
-            <div class="route-line"></div>
-
-
-            <!-- PLACE B -->
-
-            <div class="route">
-
-                <div class="location-dot"></div>
-
-                <div class="location-text">
-                    Place B
-                </div>
-
-            </div>
-
-
-            <div class="mobility-info">
-
-                Teckso is working toward smarter
-                mobility solutions that can make
-                everyday journeys more connected,
-                efficient, and rewarding.
+                Building smarter connections between
+                people and the journeys they take.
 
             </div>
 
@@ -718,18 +590,18 @@
 
 
     <h2>
-        Technology that connects people
+        Technology with a purpose
     </h2>
 
 
     <p class="about-description">
 
-        Teckso is building technology for a
-        more connected mobility ecosystem.
-        Our vision is to make it easier for
-        people traveling along similar routes
-        to connect and make better use of
-        journeys already happening.
+        Teckso is building a mobility-focused technology
+        company with a vision to make journeys more
+        connected and efficient. We are creating
+        opportunities for talented people to work on
+        meaningful technology and help shape the future
+        of mobility.
 
     </p>
 
@@ -743,7 +615,6 @@
 
 <section class="values">
 
-
     <div class="values-heading">
 
         <div class="section-label">
@@ -751,7 +622,7 @@
         </div>
 
         <h2>
-            Be part of something meaningful
+            Grow with our team
         </h2>
 
     </div>
@@ -759,8 +630,6 @@
 
     <div class="value-grid">
 
-
-        <!-- Innovation -->
 
         <div class="value-card">
 
@@ -773,15 +642,12 @@
             </h3>
 
             <p>
-                Work on technology that aims to
-                solve real-world mobility challenges
-                through practical innovation.
+                Work on practical technology and
+                solve real-world mobility challenges.
             </p>
 
         </div>
 
-
-        <!-- Collaboration -->
 
         <div class="value-card">
 
@@ -794,15 +660,12 @@
             </h3>
 
             <p>
-                Join a team where ideas are shared,
-                different perspectives matter,
-                and everyone contributes.
+                Work with people who value ideas,
+                teamwork, learning, and creativity.
             </p>
 
         </div>
 
-
-        <!-- Impact -->
 
         <div class="value-card">
 
@@ -811,13 +674,12 @@
             </div>
 
             <h3>
-                Real-world Impact
+                Impact
             </h3>
 
             <p>
-                Help build products designed to
-                make everyday transportation more
-                connected and accessible.
+                Help create technology that can have
+                a meaningful impact on everyday travel.
             </p>
 
         </div>
@@ -840,13 +702,13 @@
 
 
     <p>
-        Explore opportunities with us and take
-        the next step in your career.
+        Start your application and become part of
+        the team building the future of mobility.
     </p>
 
 
     <a
-        href="/register"
+        href="{{ url_for('register') }}"
         class="career-btn"
     >
         Start Your Application

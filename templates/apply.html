@@ -8,719 +8,136 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Job Application</title>
+    <title>Teckso | Job Application</title>
 
-    <style>
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f7fb;
-            color: #222;
-        }
-
-        nav {
-            background: #123c69;
-            color: white;
-
-            padding: 18px 40px;
-
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        nav h2 {
-            font-size: 22px;
-        }
-
-        .logout {
-            background: #d9534f;
-            color: white;
-            text-decoration: none;
-
-            padding: 10px 18px;
-
-            border-radius: 5px;
-        }
-
-        .container {
-            max-width: 950px;
-
-            margin: 40px auto;
-
-            padding: 20px;
-        }
-
-        .form-box {
-            background: white;
-
-            padding: 35px;
-
-            border-radius: 12px;
-
-            box-shadow:
-                0 4px 18px rgba(0,0,0,0.08);
-        }
-
-        .title {
-            text-align: center;
-
-            margin-bottom: 30px;
-        }
-
-        .title h1 {
-            color: #123c69;
-
-            margin-bottom: 8px;
-        }
-
-        .title p {
-            color: #777;
-        }
-
-        .section-title {
-            color: #123c69;
-
-            border-bottom: 2px solid #eee;
-
-            padding-bottom: 10px;
-
-            margin: 30px 0 20px;
-        }
-
-        .form-grid {
-            display: grid;
-
-            grid-template-columns:
-                repeat(2, 1fr);
-
-            gap: 20px;
-        }
-
-        .form-group {
-            display: flex;
-
-            flex-direction: column;
-        }
-
-        .full {
-            grid-column: 1 / -1;
-        }
-
-        label {
-            font-weight: bold;
-
-            margin-bottom: 7px;
-
-            color: #444;
-        }
-
-        .required {
-            color: red;
-        }
-
-        input,
-        select,
-        textarea {
-
-            width: 100%;
-
-            padding: 12px;
-
-            border: 1px solid #ccc;
-
-            border-radius: 6px;
-
-            font-size: 15px;
-
-            font-family: Arial, sans-serif;
-        }
-
-        input:focus,
-        select:focus,
-        textarea:focus {
-
-            outline: none;
-
-            border-color: #123c69;
-
-            box-shadow:
-                0 0 0 2px rgba(18,60,105,0.1);
-        }
-
-        textarea {
-            min-height: 110px;
-
-            resize: vertical;
-        }
-
-        .help-text {
-            font-size: 12px;
-
-            color: #777;
-
-            margin-top: 5px;
-        }
-
-        .resume-box {
-
-            background: #f8f9fa;
-
-            border: 1px dashed #aaa;
-
-            padding: 20px;
-
-            border-radius: 8px;
-
-            margin-top: 5px;
-        }
-
-        .submit-area {
-
-            margin-top: 35px;
-
-            text-align: center;
-
-            border-top: 1px solid #eee;
-
-            padding-top: 25px;
-        }
-
-        .submit-btn {
-
-            background: #123c69;
-
-            color: white;
-
-            border: none;
-
-            padding: 14px 45px;
-
-            border-radius: 7px;
-
-            font-size: 16px;
-
-            font-weight: bold;
-
-            cursor: pointer;
-        }
-
-        .submit-btn:hover {
-
-            background: #0d2d50;
-
-        }
-
-        .back {
-
-            display: block;
-
-            margin-top: 20px;
-
-            text-align: center;
-
-            color: #123c69;
-
-            text-decoration: none;
-
-            font-weight: bold;
-        }
-
-        @media (max-width: 700px) {
-
-            nav {
-                padding: 15px 20px;
-            }
-
-            nav h2 {
-                font-size: 18px;
-            }
-
-            .form-box {
-                padding: 20px;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .full {
-                grid-column: auto;
-            }
-
-        }
-
-    </style>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 
 </head>
 
-
 <body>
 
-    <!-- Navigation -->
+<nav class="main-nav">
 
-    <nav>
+    <a href="/" class="brand">
 
-        <h2>
-            Company Hiring Portal
-        </h2>
+        <img
+            src="{{ url_for('static', filename='images/teckso-logo.png') }}"
+            alt="Teckso Logo"
+        >
+
+    </a>
+
+
+    <div class="nav-links">
 
         <a
-            href="/logout"
-            class="logout">
-
-            Logout
-
+            href="{{ url_for('applicant_home') }}"
+            class="nav-link nav-applicant"
+        >
+            Dashboard
         </a>
 
-    </nav>
+        <a
+            href="{{ url_for('logout') }}"
+            class="nav-link nav-logout"
+        >
+            Logout
+        </a>
+
+    </div>
+
+</nav>
 
 
-    <div class="container">
+<div class="page-wrapper">
 
-        <div class="form-box">
+    <div class="content-container">
 
-            <div class="title">
 
-                <h1>
-                    Job Application Form
-                </h1>
+        <div class="page-title">
+            Job Application
+        </div>
 
-                <p>
-                    Please provide accurate information.
-                </p>
+        <p class="page-subtitle">
+            Complete your application carefully.
+            One applicant can submit only one application.
+        </p>
 
-            </div>
+
+        <div class="card application-form-card">
 
 
             <form
                 method="POST"
-                enctype="multipart/form-data">
+                action="{{ url_for('apply') }}"
+                enctype="multipart/form-data"
+            >
 
 
-                <!-- JOB DETAILS -->
+                <!-- ==============================
+                     POSITION
+                     ============================== -->
 
-                <h2 class="section-title">
-                    Job Details
-                </h2>
+                <div class="form-section">
 
-                <div class="form-grid">
-
-                    <div class="form-group full">
-
-                        <label>
-                            Position Applying For
-                            <span class="required">*</span>
-                        </label>
-
-                        <select
-                            name="position"
-                            required>
-
-                            <option value="">
-                                -- Select Position --
-                            </option>
-
-                            <option value="Software Developer">
-                                Software Developer
-                            </option>
-
-                            <option value="Web Developer">
-                                Web Developer
-                            </option>
-
-                            <option value="Python Developer">
-                                Python Developer
-                            </option>
-
-                            <option value="Java Developer">
-                                Java Developer
-                            </option>
-
-                            <option value="Data Analyst">
-                                Data Analyst
-                            </option>
-
-                            <option value="Data Scientist">
-                                Data Scientist
-                            </option>
-
-                            <option value="Testing Engineer">
-                                Testing Engineer
-                            </option>
-
-                            <option value="Cloud Engineer">
-                                Cloud Engineer
-                            </option>
-
-                        </select>
-
+                    <div class="section-label">
+                        APPLICATION
                     </div>
 
-                </div>
+                    <h2 class="form-section-title">
+                        Position
+                    </h2>
 
+                    <p class="form-section-description">
+                        Select the position you want to apply for.
+                    </p>
 
-                <!-- PERSONAL DETAILS -->
 
-                <h2 class="section-title">
-                    Personal Details
-                </h2>
+                    <div class="form-grid">
 
-                <div class="form-grid">
+                        <div class="form-group form-full">
 
-                    <div class="form-group">
+                            <label for="position">
+                                Job Position
+                            </label>
 
-                        <label>
-                            Full Name
-                            <span class="required">*</span>
-                        </label>
+                            <select
+                                id="position"
+                                name="position"
+                                class="form-control"
+                                required
+                            >
 
-                        <input
-                            type="text"
-                            name="name"
-                            value="{{ session['user_name'] }}"
-                            required>
+                                <option value="">
+                                    Select a position
+                                </option>
 
-                    </div>
+                                <option value="Web Developer">
+                                    Web Developer
+                                </option>
 
+                                <option value="Data Analyst">
+                                    Data Analyst
+                                </option>
 
-                    <div class="form-group">
+                                <option value="Software Developer">
+                                    Software Developer
+                                </option>
 
-                        <label>
-                            Email
-                            <span class="required">*</span>
-                        </label>
+                                <option value="Python Developer">
+                                    Python Developer
+                                </option>
 
-                        <input
-                            type="email"
-                            name="email"
-                            value="{{ session['user_email'] }}"
-                            required>
+                                <option value="Frontend Developer">
+                                    Frontend Developer
+                                </option>
 
-                    </div>
+                                <option value="Backend Developer">
+                                    Backend Developer
+                                </option>
 
-
-                    <div class="form-group">
-
-                        <label>
-                            Mobile Number
-                            <span class="required">*</span>
-                        </label>
-
-                        <input
-                            type="tel"
-                            name="mobile"
-                            value="{{ session['user_mobile'] }}"
-                            pattern="[0-9]{10}"
-                            maxlength="10"
-                            required>
-
-                        <span class="help-text">
-                            Enter 10-digit mobile number
-                        </span>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Date of Birth
-                            <span class="required">*</span>
-                        </label>
-
-                        <input
-                            type="date"
-                            name="dob"
-                            required>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Gender
-                            <span class="required">*</span>
-                        </label>
-
-                        <select
-                            name="gender"
-                            required>
-
-                            <option value="">
-                                -- Select Gender --
-                            </option>
-
-                            <option value="Male">
-                                Male
-                            </option>
-
-                            <option value="Female">
-                                Female
-                            </option>
-
-                            <option value="Other">
-                                Other
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-
-                <!-- EDUCATION -->
-
-                <h2 class="section-title">
-                    Education Details
-                </h2>
-
-                <div class="form-grid">
-
-                    <div class="form-group">
-
-                        <label>
-                            Highest Qualification
-                            <span class="required">*</span>
-                        </label>
-
-                        <select
-                            name="qualification"
-                            required>
-
-                            <option value="">
-                                -- Select Qualification --
-                            </option>
-
-                            <option value="B.Tech">
-                                B.Tech
-                            </option>
-
-                            <option value="B.E">
-                                B.E
-                            </option>
-
-                            <option value="B.Sc">
-                                B.Sc
-                            </option>
-
-                            <option value="BCA">
-                                BCA
-                            </option>
-
-                            <option value="M.Tech">
-                                M.Tech
-                            </option>
-
-                            <option value="MCA">
-                                MCA
-                            </option>
-
-                            <option value="M.Sc">
-                                M.Sc
-                            </option>
-
-                            <option value="MBA">
-                                MBA
-                            </option>
-
-                            <option value="Other">
-                                Other
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Branch / Specialization
-                            <span class="required">*</span>
-                        </label>
-
-                        <input
-                            type="text"
-                            name="branch"
-                            placeholder="Example: Information Technology"
-                            required>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Graduation Year
-                            <span class="required">*</span>
-                        </label>
-
-                        <select
-                            name="graduation_year"
-                            required>
-
-                            <option value="">
-                                -- Select Year --
-                            </option>
-
-                            <option value="2024">
-                                2024
-                            </option>
-
-                            <option value="2025">
-                                2025
-                            </option>
-
-                            <option value="2026">
-                                2026
-                            </option>
-
-                            <option value="2027">
-                                2027
-                            </option>
-
-                            <option value="2028">
-                                2028
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-
-                <!-- EXPERIENCE -->
-
-                <h2 class="section-title">
-                    Experience & Skills
-                </h2>
-
-                <div class="form-grid">
-
-                    <div class="form-group">
-
-                        <label>
-                            Candidate Type
-                            <span class="required">*</span>
-                        </label>
-
-                        <select
-                            name="candidate_type"
-                            required>
-
-                            <option value="">
-                                -- Select --
-                            </option>
-
-                            <option value="Fresher">
-                                Fresher
-                            </option>
-
-                            <option value="Experienced">
-                                Experienced
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label>
-                            Years of Experience
-                        </label>
-
-                        <input
-                            type="number"
-                            name="experience"
-                            min="0"
-                            max="50"
-                            placeholder="0">
-
-                    </div>
-
-
-                    <div class="form-group full">
-
-                        <label>
-                            Technical Skills
-                            <span class="required">*</span>
-                        </label>
-
-                        <input
-                            type="text"
-                            name="skills"
-                            placeholder="Example: Python, Java, SQL, HTML, CSS"
-                            required>
-
-                    </div>
-
-                </div>
-
-
-                <!-- ADDRESS -->
-
-                <h2 class="section-title">
-                    Address
-                </h2>
-
-                <div class="form-grid">
-
-                    <div class="form-group full">
-
-                        <label>
-                            Complete Address
-                            <span class="required">*</span>
-                        </label>
-
-                        <textarea
-                            name="address"
-                            placeholder="Enter your complete address"
-                            required></textarea>
-
-                    </div>
-
-                </div>
-
-
-                <!-- RESUME -->
-
-                <h2 class="section-title">
-                    Resume
-                </h2>
-
-                <div class="form-grid">
-
-                    <div class="form-group full">
-
-                        <label>
-                            Upload Resume
-                            <span class="required">*</span>
-                        </label>
-
-                        <div class="resume-box">
-
-                            <input
-                                type="file"
-                                name="resume"
-                                accept=".pdf,.doc,.docx"
-                                required>
-
-                            <p class="help-text">
-                                Accepted formats: PDF, DOC, DOCX.
-                                Maximum size: 5 MB.
-                            </p>
+                            </select>
 
                         </div>
 
@@ -729,34 +146,491 @@
                 </div>
 
 
-                <!-- SUBMIT -->
+                <!-- ==============================
+                     PERSONAL DETAILS
+                     ============================== -->
 
-                <div class="submit-area">
+                <div class="form-section">
 
-                    <button
-                        type="submit"
-                        class="submit-btn">
+                    <div class="section-label">
+                        PERSONAL INFORMATION
+                    </div>
 
-                        Submit Application
+                    <h2 class="form-section-title">
+                        Personal Details
+                    </h2>
 
-                    </button>
+                    <p class="form-section-description">
+                        Enter your personal information.
+                    </p>
+
+
+                    <div class="form-grid">
+
+
+                        <div class="form-group">
+
+                            <label for="name">
+                                Full Name
+                            </label>
+
+                            <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                class="form-control"
+                                value="{{ session['user_name'] }}"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="email">
+                                Email Address
+                            </label>
+
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                class="form-control"
+                                value="{{ session['user_email'] }}"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="mobile">
+                                Mobile Number
+                            </label>
+
+                            <input
+                                type="tel"
+                                id="mobile"
+                                name="mobile"
+                                class="form-control"
+                                value="{{ session['user_mobile'] }}"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="dob">
+                                Date of Birth
+                            </label>
+
+                            <input
+                                type="date"
+                                id="dob"
+                                name="dob"
+                                class="form-control"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="gender">
+                                Gender
+                            </label>
+
+                            <select
+                                id="gender"
+                                name="gender"
+                                class="form-control"
+                                required
+                            >
+
+                                <option value="">
+                                    Select gender
+                                </option>
+
+                                <option value="Male">
+                                    Male
+                                </option>
+
+                                <option value="Female">
+                                    Female
+                                </option>
+
+                                <option value="Other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
 
-                <a
-                    href="/applicant-home"
-                    class="back">
+                <!-- ==============================
+                     EDUCATION
+                     ============================== -->
 
-                    ← Back to Dashboard
+                <div class="form-section">
 
-                </a>
+                    <div class="section-label">
+                        EDUCATION
+                    </div>
+
+                    <h2 class="form-section-title">
+                        Educational Details
+                    </h2>
+
+                    <p class="form-section-description">
+                        Provide your latest educational details.
+                    </p>
+
+
+                    <div class="form-grid">
+
+
+                        <div class="form-group">
+
+                            <label for="qualification">
+                                Qualification
+                            </label>
+
+                            <input
+                                type="text"
+                                id="qualification"
+                                name="qualification"
+                                class="form-control"
+                                placeholder="Example: B.Tech"
+                                required
+                            >
+
+                        </div>
+                        <div class="form-group">
+
+    <label for="college_name">
+        College Name
+    </label>
+
+    <input
+        type="text"
+        id="college_name"
+        name="college_name"
+        class="form-control"
+        placeholder="Enter your college name"
+        required
+    >
+
+</div>
+
+
+<div class="form-group">
+
+    <label for="university_name">
+        University Name
+    </label>
+
+    <input
+        type="text"
+        id="university_name"
+        name="university_name"
+        class="form-control"
+        placeholder="Enter your university name"
+        required
+    >
+
+</div>
+
+
+                        <div class="form-group">
+
+                            <label for="branch">
+                                Branch / Specialization
+                            </label>
+
+                            <input
+                                type="text"
+                                id="branch"
+                                name="branch"
+                                class="form-control"
+                                placeholder="Example: Information Technology"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="graduation_year">
+                                Graduation Year
+                            </label>
+
+                            <select
+                                id="graduation_year"
+                                name="graduation_year"
+                                class="form-control"
+                                required
+                            >
+
+                                <option value="">
+                                    Select year
+                                </option>
+
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2028">2028</option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Candidate Type
+                            </label>
+
+                            <div class="radio-group">
+
+                                <label class="radio-item">
+
+                                    <input
+                                        type="radio"
+                                        name="candidate_type"
+                                        value="Fresher"
+                                        checked
+                                    >
+
+                                    Fresher
+
+                                </label>
+
+
+                                <label class="radio-item">
+
+                                    <input
+                                        type="radio"
+                                        name="candidate_type"
+                                        value="Experienced"
+                                    >
+
+                                    Experienced
+
+                                </label>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==============================
+                     EXPERIENCE
+                     ============================== -->
+
+                <div class="form-section">
+
+                    <div class="section-label">
+                        EXPERIENCE
+                    </div>
+
+                    <h2 class="form-section-title">
+                        Professional Experience
+                    </h2>
+
+                    <p class="form-section-description">
+                        Experienced applicants can provide
+                        details here. Freshers may leave it blank.
+                    </p>
+
+
+                    <div class="form-group">
+
+                        <label for="experience">
+                            Experience
+                        </label>
+
+                        <textarea
+                            id="experience"
+                            name="experience"
+                            class="form-control"
+                            placeholder="Example: 2 years as a Python Developer at XYZ Company"
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==============================
+                     SKILLS
+                     ============================== -->
+
+                <div class="form-section">
+
+                    <div class="section-label">
+                        SKILLS
+                    </div>
+
+                    <h2 class="form-section-title">
+                        Technical Skills
+                    </h2>
+
+                    <p class="form-section-description">
+                        List your relevant technical skills.
+                    </p>
+
+
+                    <div class="form-group">
+
+                        <label for="skills">
+                            Skills
+                        </label>
+
+                        <textarea
+                            id="skills"
+                            name="skills"
+                            class="form-control"
+                            placeholder="Example: Python, Flask, SQL, HTML, CSS, JavaScript"
+                            required
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==============================
+                     ADDRESS
+                     ============================== -->
+
+                <div class="form-section">
+
+                    <div class="section-label">
+                        CONTACT INFORMATION
+                    </div>
+
+                    <h2 class="form-section-title">
+                        Address
+                    </h2>
+
+
+                    <div class="form-group">
+
+                        <label for="address">
+                            Full Address
+                        </label>
+
+                        <textarea
+                            id="address"
+                            name="address"
+                            class="form-control"
+                            placeholder="Enter your complete address"
+                            required
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==============================
+                     RESUME
+                     ============================== -->
+
+                <div class="form-section">
+
+                    <div class="section-label">
+                        RESUME
+                    </div>
+
+                    <h2 class="form-section-title">
+                        Upload Resume
+                    </h2>
+
+                    <p class="form-section-description">
+                        Accepted formats: PDF, DOC, DOCX.
+                        Maximum size: 5 MB.
+                    </p>
+
+
+                    <div class="form-group">
+
+                        <label for="resume">
+                            Resume
+                        </label>
+
+                        <input
+                            type="file"
+                            id="resume"
+                            name="resume"
+                            class="file-input"
+                            accept=".pdf,.doc,.docx"
+                        >
+
+                        <div class="file-help">
+                            Maximum file size: 5 MB
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==============================
+                     ACTIONS
+                     ============================== -->
+
+                <div class="form-actions">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Submit Application
+                    </button>
+
+                    <a
+                        href="{{ url_for('applicant_home') }}"
+                        class="btn btn-light"
+                    >
+                        Cancel
+                    </a>
+
+                </div>
+
 
             </form>
 
         </div>
 
     </div>
+
+</div>
+
+
+<footer class="site-footer">
+
+    © 2026 Teckso. All rights reserved.
+
+</footer>
+
 
 </body>
 

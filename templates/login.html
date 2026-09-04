@@ -2,278 +2,76 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Teckso | Admin Login</title>
+    <title>Teckso | Applicant Login</title>
 
-    <style>
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f4f7fb;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ==========================
-           NAVBAR
-           ========================== */
-
-        nav {
-            background: white;
-            height: 72px;
-            padding: 0 7%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow:
-                0 2px 12px rgba(0,0,0,0.06);
-        }
-
-        .logo {
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo-mark {
-            width: 40px;
-            height: 40px;
-            border-radius: 9px;
-            background: #123c69;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 19px;
-        }
-
-        .logo-text {
-            color: #123c69;
-            font-size: 24px;
-            font-weight: 800;
-        }
-
-        .home-link {
-            text-decoration: none;
-            color: #123c69;
-            font-weight: 600;
-        }
-
-        /* ==========================
-           LOGIN AREA
-           ========================== */
-
-        .page {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px 20px;
-        }
-
-        .login-card {
-            width: 430px;
-            max-width: 100%;
-            background: white;
-            padding: 40px;
-            border-radius: 14px;
-            box-shadow:
-                0 10px 35px rgba(18,60,105,0.10);
-        }
-
-        .icon {
-            width: 58px;
-            height: 58px;
-            margin: 0 auto 20px;
-            border-radius: 12px;
-            background: #e7f0fa;
-            color: #123c69;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 27px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #123c69;
-            margin-bottom: 8px;
-            font-size: 28px;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #6b7280;
-            margin-bottom: 30px;
-        }
-
-        .error {
-            background: #fde2e2;
-            color: #b42318;
-            padding: 12px;
-            border-radius: 7px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        label {
-            display: block;
-            color: #374151;
-            font-weight: 600;
-            margin-bottom: 7px;
-        }
-
-        input {
-            width: 100%;
-            padding: 13px;
-            border: 1px solid #d1d5db;
-            border-radius: 7px;
-            font-size: 15px;
-            margin-bottom: 18px;
-            outline: none;
-        }
-
-        input:focus {
-            border-color: #2563eb;
-            box-shadow:
-                0 0 0 3px rgba(37,99,235,0.10);
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 7px;
-            background: #123c69;
-            color: white;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #0d2d50;
-        }
-
-        .back {
-            display: block;
-            text-align: center;
-            margin-top: 22px;
-            color: #123c69;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .security-note {
-            margin-top: 22px;
-            padding: 12px;
-            background: #f5f8fc;
-            border-radius: 7px;
-            color: #6b7280;
-            text-align: center;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        /* ==========================
-           FOOTER
-           ========================== */
-
-        footer {
-            background: #0c2947;
-            color: #dbe8f5;
-            text-align: center;
-            padding: 20px;
-            font-size: 13px;
-        }
-
-        @media (max-width: 500px) {
-
-            .login-card {
-                padding: 28px 22px;
-            }
-
-            .logo-text {
-                font-size: 20px;
-            }
-
-        }
-
-    </style>
-
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 
 <body>
 
+<nav class="main-nav">
 
-<!-- ==========================
-     NAVBAR
-     ========================== -->
+    <a href="/" class="brand">
 
-<nav>
-
-    <a href="/" class="logo">
-
-        <div class="logo-mark">
-            T
-        </div>
-
-        <div class="logo-text">
-            TECKSO
-        </div>
+        <img
+            src="{{ url_for('static', filename='images/teckso-logo.png') }}"
+            alt="Teckso Logo"
+        >
 
     </a>
 
-    <a
-        href="/"
-        class="home-link"
-    >
-        ← Home
-    </a>
+    <div class="nav-links">
+
+        <a href="{{ url_for('register') }}"
+           class="nav-link nav-register">
+            Register
+        </a>
+
+        <a href="{{ url_for('admin_login') }}"
+           class="nav-link nav-admin">
+            Admin Login
+        </a>
+
+    </div>
 
 </nav>
 
 
-<!-- ==========================
-     LOGIN
-     ========================== -->
+<div class="auth-page">
 
-<div class="page">
+    <div class="auth-card">
 
-    <div class="login-card">
+        <div class="auth-logo">
 
-        <div class="icon">
-            🔐
+            <img
+                src="{{ url_for('static', filename='images/teckso-logo.png') }}"
+                alt="Teckso"
+            >
+
+        </div>
+
+        <div class="auth-icon">
+            👤
         </div>
 
         <h1>
-            Admin Login
+            Applicant Login
         </h1>
 
-        <p class="subtitle">
-            Teckso Hiring Portal
+        <p class="auth-subtitle">
+            Teckso Careers
         </p>
 
 
         {% if error %}
 
-        <div class="error">
+        <div class="error-message">
             {{ error }}
         </div>
 
@@ -282,52 +80,73 @@
 
         <form
             method="POST"
-            action="/admin-login"
+            action="{{ url_for('login') }}"
         >
 
-            <label for="username">
-                Username
-            </label>
+            <div class="form-group">
 
-            <input
-                type="text"
-                id="username"
-                name="username"
-                placeholder="Enter admin username"
-                required
-                autocomplete="username"
+                <label for="email">
+                    Email Address
+                </label>
+
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    class="form-control"
+                    placeholder="Enter your registered email"
+                    required
+                    autocomplete="email"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="form-control"
+                    placeholder="Enter your password"
+                    required
+                    autocomplete="current-password"
+                >
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="auth-submit"
             >
-
-
-            <label for="password">
-                Password
-            </label>
-
-            <input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Enter admin password"
-                required
-                autocomplete="current-password"
-            >
-
-
-            <button type="submit">
-                Login to Admin Dashboard
+                Login to Teckso Careers
             </button>
 
         </form>
 
 
+        <a
+            href="{{ url_for('register') }}"
+            class="auth-footer-link"
+        >
+            Don't have an account? Register
+        </a>
+
+
         <div class="security-note">
-            Authorized Teckso administrators only.
+            Use the email and password you used during registration.
         </div>
 
 
         <a
             href="/"
-            class="back"
+            class="auth-footer-link"
         >
             ← Back to Teckso Careers
         </a>
@@ -337,16 +156,11 @@
 </div>
 
 
-<!-- ==========================
-     FOOTER
-     ========================== -->
-
-<footer>
+<footer class="site-footer">
 
     © 2026 Teckso. All rights reserved.
 
 </footer>
-
 
 </body>
 

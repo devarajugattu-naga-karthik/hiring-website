@@ -16,7 +16,11 @@ from werkzeug.security import (
 
 from werkzeug.utils import secure_filename
 
-from database import get_db_connection, init_db
+from database import (
+    get_db_connection,
+    init_db,
+    upgrade_database
+)
 
 from openpyxl import Workbook
 
@@ -91,6 +95,7 @@ os.makedirs(
 # ==================================================
 
 init_db()
+upgrade_database()
 
 
 # ==================================================
@@ -132,25 +137,46 @@ def register():
 
     if request.method == "POST":
 
-        name = request.form[
-            "name"
-        ].strip()
+        name = request.form.get(
+            "name",
+            ""
+        ).strip()
 
-        email = request.form[
-            "email"
-        ].strip().lower()
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
 
-        mobile = request.form[
-            "mobile"
-        ].strip()
+        mobile = request.form.get(
+            "mobile",
+            ""
+        ).strip()
 
-        password = request.form[
-            "password"
-        ]
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+
+        # ------------------------------------------
+        # Basic validation
+        # ------------------------------------------
+
+        if not name or not email or not mobile or not password:
+
+            return render_template(
+                "register.html",
+                error="All fields are required."
+            )
+
 
         connection = get_db_connection()
 
+
+        # ------------------------------------------
         # Check duplicate email
+        # ------------------------------------------
+
         existing_email = connection.execute(
             """
             SELECT id
@@ -159,6 +185,7 @@ def register():
             """,
             (email,)
         ).fetchone()
+
 
         if existing_email:
 
@@ -169,7 +196,11 @@ def register():
                 error="Email already registered."
             )
 
+
+        # ------------------------------------------
         # Check duplicate mobile
+        # ------------------------------------------
+
         existing_mobile = connection.execute(
             """
             SELECT id
@@ -178,6 +209,7 @@ def register():
             """,
             (mobile,)
         ).fetchone()
+
 
         if existing_mobile:
 
@@ -188,12 +220,20 @@ def register():
                 error="Mobile number already registered."
             )
 
+
+        # ------------------------------------------
         # Hash password
+        # ------------------------------------------
+
         hashed_password = generate_password_hash(
             password
         )
 
+
+        # ------------------------------------------
         # Create user
+        # ------------------------------------------
+
         connection.execute(
             """
             INSERT INTO users (
@@ -212,12 +252,15 @@ def register():
             )
         )
 
+
         connection.commit()
         connection.close()
+
 
         return redirect(
             url_for("login")
         )
+
 
     return render_template(
         "register.html"
@@ -236,15 +279,19 @@ def login():
 
     if request.method == "POST":
 
-        email = request.form[
-            "email"
-        ].strip().lower()
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
 
-        password = request.form[
-            "password"
-        ]
+        password = request.form.get(
+            "password",
+            ""
+        )
+
 
         connection = get_db_connection()
+
 
         user = connection.execute(
             """
@@ -255,7 +302,13 @@ def login():
             (email,)
         ).fetchone()
 
+
         connection.close()
+
+
+        # ------------------------------------------
+        # Successful applicant login
+        # ------------------------------------------
 
         if user and check_password_hash(
             user["password"],
@@ -271,14 +324,17 @@ def login():
             session["user_email"] = user["email"]
             session["user_mobile"] = user["mobile"]
 
+
             return redirect(
                 url_for("applicant_home")
             )
+
 
         return render_template(
             "login.html",
             error="Invalid email or password."
         )
+
 
     return render_template(
         "login.html"
@@ -298,7 +354,9 @@ def applicant_home():
             url_for("login")
         )
 
+
     connection = get_db_connection()
+
 
     application = connection.execute(
         """
@@ -310,7 +368,9 @@ def applicant_home():
         (session["user_id"],)
     ).fetchone()
 
+
     connection.close()
+
 
     return render_template(
         "applicant_home.html",
@@ -329,10 +389,6 @@ def applicant_home():
 )
 def apply():
 
-    # ------------------------------------------
-    # Applicant must be logged in
-    # ------------------------------------------
-
     if "user_id" not in session:
 
         return redirect(
@@ -346,6 +402,7 @@ def apply():
 
     connection = get_db_connection()
 
+
     existing_application = connection.execute(
         """
         SELECT id, position
@@ -355,6 +412,7 @@ def apply():
         """,
         (session["user_id"],)
     ).fetchone()
+
 
     connection.close()
 
@@ -367,6 +425,7 @@ def apply():
 
         return f"""
         <!DOCTYPE html>
+
         <html>
 
         <head>
@@ -377,7 +436,7 @@ def apply():
 
                 body {{
                     font-family: Arial, sans-serif;
-                    background: #f4f7fb;
+                    background: #fff7f2;
                     text-align: center;
                     padding-top: 100px;
                 }}
@@ -388,14 +447,14 @@ def apply():
                     max-width: 90%;
                     margin: auto;
                     padding: 40px;
-                    border-radius: 12px;
+                    border-radius: 14px;
                     box-shadow:
-                        0 4px 15px
-                        rgba(0,0,0,0.1);
+                        0 10px 35px
+                        rgba(0,0,0,0.08);
                 }}
 
                 h2 {{
-                    color: #dc3545;
+                    color: #ff4b00;
                     margin-bottom: 20px;
                 }}
 
@@ -406,11 +465,11 @@ def apply():
 
                 a {{
                     display: inline-block;
-                    background: #2563eb;
+                    background: #ff4b00;
                     color: white;
                     text-decoration: none;
                     padding: 12px 20px;
-                    border-radius: 6px;
+                    border-radius: 7px;
                 }}
 
             </style>
@@ -422,7 +481,7 @@ def apply():
             <div class="box">
 
                 <h2>
-                    ⚠️ Application Already Submitted
+                    Application Already Submitted
                 </h2>
 
                 <p>
@@ -492,6 +551,16 @@ def apply():
             ""
         ).strip()
 
+        college_name = request.form.get(
+            "college_name",
+            ""
+        ).strip()
+
+        university_name = request.form.get(
+            "university_name",
+            ""
+        ).strip()
+
         branch = request.form.get(
             "branch",
             ""
@@ -524,8 +593,36 @@ def apply():
 
 
         # ------------------------------------------
-        # Open database
+        # Validate required fields
         # ------------------------------------------
+
+        required_fields = {
+            "position": position,
+            "name": name,
+            "email": email,
+            "mobile": mobile,
+            "dob": dob,
+            "gender": gender,
+            "qualification": qualification,
+            "college_name": college_name,
+            "university_name": university_name,
+            "branch": branch,
+            "graduation_year": graduation_year,
+            "candidate_type": candidate_type,
+            "skills": skills,
+            "address": address
+        }
+
+
+        for field_name, field_value in required_fields.items():
+
+            if not field_value:
+
+                return render_template(
+                    "apply.html",
+                    error=f"{field_name.replace('_', ' ').title()} is required."
+                )
+
 
         connection = get_db_connection()
 
@@ -536,7 +633,7 @@ def apply():
 
         existing_application = connection.execute(
             """
-            SELECT id, position
+            SELECT id
             FROM applications
             WHERE user_id = ?
             LIMIT 1
@@ -567,22 +664,22 @@ def apply():
 
         if resume and resume.filename:
 
-            # Validate extension
             if not allowed_file(
                 resume.filename
             ):
 
                 connection.close()
 
-                return (
-                    "Invalid resume format. "
-                    "Only PDF, DOC and DOCX "
-                    "files are allowed.",
-                    400
+                return render_template(
+                    "apply.html",
+                    error=(
+                        "Invalid resume format. "
+                        "Only PDF, DOC and DOCX "
+                        "files are allowed."
+                    )
                 )
 
 
-            # Secure original filename
             original_filename = secure_filename(
                 resume.filename
             )
@@ -592,19 +689,16 @@ def apply():
 
                 connection.close()
 
-                return (
-                    "Invalid resume filename.",
-                    400
+                return render_template(
+                    "apply.html",
+                    error="Invalid resume filename."
                 )
 
-
-            # ------------------------------------------
-            # Create unique filename
-            # ------------------------------------------
 
             base_name, extension = os.path.splitext(
                 original_filename
             )
+
 
             resume_filename = (
                 f"{session['user_id']}_"
@@ -640,6 +734,8 @@ def apply():
                 dob,
                 gender,
                 qualification,
+                college_name,
+                university_name,
                 branch,
                 graduation_year,
                 candidate_type,
@@ -651,6 +747,8 @@ def apply():
             )
 
             VALUES (
+                ?,
+                ?,
                 ?,
                 ?,
                 ?,
@@ -677,6 +775,8 @@ def apply():
                 dob,
                 gender,
                 qualification,
+                college_name,
+                university_name,
                 branch,
                 graduation_year,
                 candidate_type,
@@ -689,7 +789,6 @@ def apply():
 
 
         connection.commit()
-
         connection.close()
 
 
@@ -704,31 +803,31 @@ def apply():
 
         <head>
 
-            <title>Application Submitted</title>
+            <title>Teckso | Application Submitted</title>
 
             <style>
 
                 body {
                     font-family: Arial, sans-serif;
-                    background: #f4f7fb;
+                    background: #fff7f2;
                     text-align: center;
                     padding-top: 100px;
                 }
 
                 .box {
                     background: white;
-                    width: 500px;
+                    width: 520px;
                     max-width: 90%;
                     margin: auto;
-                    padding: 40px;
-                    border-radius: 12px;
+                    padding: 45px;
+                    border-radius: 14px;
                     box-shadow:
-                        0 4px 15px
-                        rgba(0,0,0,0.1);
+                        0 10px 35px
+                        rgba(0,0,0,0.08);
                 }
 
                 h2 {
-                    color: #16a34a;
+                    color: #ff4b00;
                     margin-bottom: 20px;
                 }
 
@@ -739,11 +838,12 @@ def apply():
 
                 a {
                     display: inline-block;
-                    background: #2563eb;
+                    background: #ff4b00;
                     color: white;
                     text-decoration: none;
-                    padding: 12px 20px;
-                    border-radius: 6px;
+                    padding: 12px 22px;
+                    border-radius: 7px;
+                    font-weight: bold;
                 }
 
             </style>
@@ -755,16 +855,15 @@ def apply():
             <div class="box">
 
                 <h2>
-                    ✅ Application Submitted Successfully!
+                    Application Submitted Successfully!
                 </h2>
 
                 <p>
-                    Your application has been submitted successfully.
+                    Your Teckso job application has been submitted successfully.
                 </p>
 
                 <p>
-                    You cannot submit another application
-                    using this account.
+                    One applicant can submit only one application.
                 </p>
 
                 <a href="/applicant-home">
@@ -778,10 +877,6 @@ def apply():
         </html>
         """
 
-
-    # ------------------------------------------
-    # Show application form
-    # ------------------------------------------
 
     return render_template(
         "apply.html"
@@ -801,7 +896,9 @@ def my_application():
             url_for("login")
         )
 
+
     connection = get_db_connection()
+
 
     application = connection.execute(
         """
@@ -813,7 +910,9 @@ def my_application():
         (session["user_id"],)
     ).fetchone()
 
+
     connection.close()
+
 
     return render_template(
         "my_application.html",
@@ -836,7 +935,9 @@ def download_resume(application_id):
             url_for("login")
         )
 
+
     connection = get_db_connection()
+
 
     application = connection.execute(
         """
@@ -851,19 +952,22 @@ def download_resume(application_id):
         )
     ).fetchone()
 
+
     connection.close()
+
 
     if not application:
 
         return (
-            "Application not found "
-            "or access denied.",
+            "Application not found or access denied.",
             404
         )
 
-    resume_filename = (
-        application["resume_filename"]
-    )
+
+    resume_filename = application[
+        "resume_filename"
+    ]
+
 
     if not resume_filename:
 
@@ -872,10 +976,12 @@ def download_resume(application_id):
             404
         )
 
+
     resume_path = os.path.join(
         app.config["UPLOAD_FOLDER"],
         resume_filename
     )
+
 
     if not os.path.isfile(
         resume_path
@@ -885,6 +991,7 @@ def download_resume(application_id):
             "Resume file not found.",
             404
         )
+
 
     return send_from_directory(
         app.config["UPLOAD_FOLDER"],
@@ -906,7 +1013,9 @@ def download_application():
             url_for("login")
         )
 
+
     connection = get_db_connection()
+
 
     application = connection.execute(
         """
@@ -918,7 +1027,9 @@ def download_application():
         (session["user_id"],)
     ).fetchone()
 
+
     connection.close()
+
 
     if not application:
 
@@ -927,7 +1038,7 @@ def download_application():
             404
         )
 
-    # PDF folder
+
     pdf_folder = "generated_pdfs"
 
     os.makedirs(
@@ -935,20 +1046,19 @@ def download_application():
         exist_ok=True
     )
 
+
     pdf_filename = (
         "application_"
         + str(application["id"])
         + ".pdf"
     )
 
+
     pdf_path = os.path.join(
         pdf_folder,
         pdf_filename
     )
 
-    # ------------------------------------------
-    # Create PDF
-    # ------------------------------------------
 
     document = SimpleDocTemplate(
         pdf_path,
@@ -959,15 +1069,28 @@ def download_application():
         bottomMargin=40
     )
 
+
     styles = getSampleStyleSheet()
+
 
     title_style = ParagraphStyle(
         "TitleStyle",
         parent=styles["Title"],
         fontSize=20,
         alignment=TA_CENTER,
+        textColor=colors.HexColor("#111111"),
         spaceAfter=10
     )
+
+
+    subtitle_style = ParagraphStyle(
+        "SubtitleStyle",
+        parent=styles["Heading2"],
+        alignment=TA_CENTER,
+        textColor=colors.HexColor("#ff4b00"),
+        spaceAfter=20
+    )
+
 
     normal_style = ParagraphStyle(
         "NormalStyle",
@@ -976,28 +1099,26 @@ def download_application():
         leading=15
     )
 
-    subtitle_style = ParagraphStyle(
-        "SubtitleStyle",
-        parent=styles["Heading2"],
-        alignment=TA_CENTER,
-        spaceAfter=20
-    )
 
     footer_style = ParagraphStyle(
         "FooterStyle",
         parent=normal_style,
         alignment=TA_CENTER,
-        fontSize=8
+        fontSize=8,
+        textColor=colors.grey
     )
+
 
     story = []
 
+
     story.append(
         Paragraph(
-            "COMPANY HIRING PORTAL",
+            "TECKSO",
             title_style
         )
     )
+
 
     story.append(
         Paragraph(
@@ -1005,6 +1126,7 @@ def download_application():
             subtitle_style
         )
     )
+
 
     story.append(
         Paragraph(
@@ -1014,9 +1136,11 @@ def download_application():
         )
     )
 
+
     story.append(
         Spacer(1, 8)
     )
+
 
     story.append(
         Paragraph(
@@ -1026,9 +1150,11 @@ def download_application():
         )
     )
 
+
     story.append(
         Spacer(1, 20)
     )
+
 
     data = [
 
@@ -1070,6 +1196,16 @@ def download_application():
         ],
 
         [
+            "College Name",
+            str(application["college_name"])
+        ],
+
+        [
+            "University Name",
+            str(application["university_name"])
+        ],
+
+        [
             "Branch / Specialization",
             str(application["branch"])
         ],
@@ -1086,7 +1222,7 @@ def download_application():
 
         [
             "Experience",
-            str(application["experience"])
+            str(application["experience"] or "N/A")
         ],
 
         [
@@ -1101,7 +1237,7 @@ def download_application():
 
         [
             "Resume",
-            str(application["resume_filename"])
+            str(application["resume_filename"] or "Not uploaded")
         ],
 
         [
@@ -1110,6 +1246,7 @@ def download_application():
         ]
 
     ]
+
 
     table = Table(
         data,
@@ -1120,6 +1257,7 @@ def download_application():
         repeatRows=1
     )
 
+
     table.setStyle(
         TableStyle([
 
@@ -1127,7 +1265,7 @@ def download_application():
                 "BACKGROUND",
                 (0, 0),
                 (-1, 0),
-                colors.HexColor("#123c69")
+                colors.HexColor("#ff4b00")
             ),
 
             (
@@ -1204,25 +1342,29 @@ def download_application():
         ])
     )
 
+
     story.append(
         table
     )
+
 
     story.append(
         Spacer(1, 25)
     )
 
+
     story.append(
         Paragraph(
-            "This document was generated electronically "
-            "by the Company Hiring Portal.",
+            "This document was generated electronically by Teckso Careers.",
             footer_style
         )
     )
 
+
     document.build(
         story
     )
+
 
     return send_file(
         pdf_path,
@@ -1246,20 +1388,26 @@ def admin_login():
         "admin"
     )
 
+
     ADMIN_PASSWORD = os.environ.get(
         "ADMIN_PASSWORD",
         "trekso1245"
     )
 
+
     if request.method == "POST":
 
-        username = request.form[
-            "username"
-        ].strip()
+        username = request.form.get(
+            "username",
+            ""
+        ).strip()
 
-        password = request.form[
-            "password"
-        ]
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
 
         if (
             username == ADMIN_USERNAME
@@ -1274,9 +1422,11 @@ def admin_login():
                 "admin_logged_in"
             ] = True
 
+
             return redirect(
                 url_for("admin_dashboard")
             )
+
 
         return render_template(
             "admin_login.html",
@@ -1285,6 +1435,7 @@ def admin_login():
                 "or password."
             )
         )
+
 
     return render_template(
         "admin_login.html"
@@ -1306,17 +1457,21 @@ def admin_dashboard():
             url_for("admin_login")
         )
 
+
     search = request.args.get(
         "search",
         ""
     ).strip()
+
 
     status_filter = request.args.get(
         "status",
         ""
     ).strip()
 
+
     connection = get_db_connection()
+
 
     query = """
         SELECT *
@@ -1324,7 +1479,9 @@ def admin_dashboard():
         WHERE 1 = 1
     """
 
+
     parameters = []
+
 
     if search:
 
@@ -1335,13 +1492,19 @@ def admin_dashboard():
                 OR mobile LIKE ?
                 OR position LIKE ?
                 OR qualification LIKE ?
+                OR college_name LIKE ?
+                OR university_name LIKE ?
                 OR branch LIKE ?
             )
         """
 
+
         search_value = f"%{search}%"
 
+
         parameters.extend([
+            search_value,
+            search_value,
             search_value,
             search_value,
             search_value,
@@ -1350,24 +1513,29 @@ def admin_dashboard():
             search_value
         ])
 
+
     if status_filter:
 
         query += """
             AND status = ?
         """
 
+
         parameters.append(
             status_filter
         )
+
 
     query += """
         ORDER BY id DESC
     """
 
+
     applications = connection.execute(
         query,
         parameters
     ).fetchall()
+
 
     # ------------------------------------------
     # Statistics
@@ -1380,6 +1548,7 @@ def admin_dashboard():
         """
     ).fetchone()[0]
 
+
     submitted_count = connection.execute(
         """
         SELECT COUNT(*)
@@ -1387,6 +1556,7 @@ def admin_dashboard():
         WHERE status = 'Submitted'
         """
     ).fetchone()[0]
+
 
     selected_count = connection.execute(
         """
@@ -1396,6 +1566,7 @@ def admin_dashboard():
         """
     ).fetchone()[0]
 
+
     shortlisted_count = connection.execute(
         """
         SELECT COUNT(*)
@@ -1404,7 +1575,9 @@ def admin_dashboard():
         """
     ).fetchone()[0]
 
+
     connection.close()
+
 
     return render_template(
         "admin_dashboard.html",
@@ -1437,7 +1610,9 @@ def admin_view_application(
             url_for("admin_login")
         )
 
+
     connection = get_db_connection()
+
 
     application = connection.execute(
         """
@@ -1448,7 +1623,9 @@ def admin_view_application(
         (application_id,)
     ).fetchone()
 
+
     connection.close()
+
 
     if not application:
 
@@ -1456,6 +1633,7 @@ def admin_view_application(
             "Application not found.",
             404
         )
+
 
     return render_template(
         "admin_application.html",
@@ -1483,9 +1661,12 @@ def update_application_status(
             url_for("admin_login")
         )
 
+
     new_status = request.form.get(
-        "status"
-    )
+        "status",
+        ""
+    ).strip()
+
 
     allowed_statuses = {
         "Submitted",
@@ -1495,6 +1676,7 @@ def update_application_status(
         "Rejected"
     }
 
+
     if new_status not in allowed_statuses:
 
         return (
@@ -1502,7 +1684,9 @@ def update_application_status(
             400
         )
 
+
     connection = get_db_connection()
+
 
     application = connection.execute(
         """
@@ -1513,6 +1697,7 @@ def update_application_status(
         (application_id,)
     ).fetchone()
 
+
     if not application:
 
         connection.close()
@@ -1521,6 +1706,7 @@ def update_application_status(
             "Application not found.",
             404
         )
+
 
     connection.execute(
         """
@@ -1534,8 +1720,10 @@ def update_application_status(
         )
     )
 
+
     connection.commit()
     connection.close()
+
 
     return redirect(
         url_for(
@@ -1543,6 +1731,7 @@ def update_application_status(
             application_id=application_id
         )
     )
+
 
 # ==================================================
 # ADMIN DELETE APPLICATION
@@ -1552,21 +1741,21 @@ def update_application_status(
     "/admin-delete-application/<int:application_id>",
     methods=["POST"]
 )
-def admin_delete_application(application_id):
+def admin_delete_application(
+    application_id
+):
 
-    # Admin must be logged in
     if not session.get(
         "admin_logged_in"
     ):
+
         return redirect(
             url_for("admin_login")
         )
 
+
     connection = get_db_connection()
 
-    # ------------------------------------------
-    # Find application
-    # ------------------------------------------
 
     application = connection.execute(
         """
@@ -1577,6 +1766,7 @@ def admin_delete_application(application_id):
         (application_id,)
     ).fetchone()
 
+
     if not application:
 
         connection.close()
@@ -1586,6 +1776,7 @@ def admin_delete_application(application_id):
             404
         )
 
+
     # ------------------------------------------
     # Delete resume file
     # ------------------------------------------
@@ -1594,6 +1785,7 @@ def admin_delete_application(application_id):
         "resume_filename"
     ]
 
+
     if resume_filename:
 
         resume_path = os.path.join(
@@ -1601,15 +1793,21 @@ def admin_delete_application(application_id):
             resume_filename
         )
 
+
         if os.path.isfile(
             resume_path
         ):
-            os.remove(
-                resume_path
-            )
+
+            try:
+                os.remove(
+                    resume_path
+                )
+            except OSError:
+                pass
+
 
     # ------------------------------------------
-    # Delete application from database
+    # Delete database record
     # ------------------------------------------
 
     connection.execute(
@@ -1620,17 +1818,16 @@ def admin_delete_application(application_id):
         (application_id,)
     )
 
-    connection.commit()
 
+    connection.commit()
     connection.close()
 
-    # ------------------------------------------
-    # Return to dashboard
-    # ------------------------------------------
 
     return redirect(
         url_for("admin_dashboard")
     )
+
+
 # ==================================================
 # ADMIN DOWNLOAD RESUME
 # ==================================================
@@ -1650,7 +1847,9 @@ def admin_download_resume(
             url_for("admin_login")
         )
 
+
     connection = get_db_connection()
+
 
     application = connection.execute(
         """
@@ -1661,7 +1860,9 @@ def admin_download_resume(
         (application_id,)
     ).fetchone()
 
+
     connection.close()
+
 
     if not application:
 
@@ -1670,9 +1871,11 @@ def admin_download_resume(
             404
         )
 
-    resume_filename = (
-        application["resume_filename"]
-    )
+
+    resume_filename = application[
+        "resume_filename"
+    ]
+
 
     if not resume_filename:
 
@@ -1681,10 +1884,12 @@ def admin_download_resume(
             404
         )
 
+
     resume_path = os.path.join(
         app.config["UPLOAD_FOLDER"],
         resume_filename
     )
+
 
     if not os.path.isfile(
         resume_path
@@ -1694,6 +1899,7 @@ def admin_download_resume(
             "Resume file not found.",
             404
         )
+
 
     return send_from_directory(
         app.config["UPLOAD_FOLDER"],
@@ -1717,7 +1923,9 @@ def admin_export_excel():
             url_for("admin_login")
         )
 
+
     connection = get_db_connection()
+
 
     applications = connection.execute(
         """
@@ -1727,7 +1935,9 @@ def admin_export_excel():
         """
     ).fetchall()
 
+
     connection.close()
+
 
     # ------------------------------------------
     # Create workbook
@@ -1735,9 +1945,12 @@ def admin_export_excel():
 
     workbook = Workbook()
 
+
     worksheet = workbook.active
 
+
     worksheet.title = "Applications"
+
 
     headings = [
 
@@ -1749,6 +1962,8 @@ def admin_export_excel():
         "Date of Birth",
         "Gender",
         "Qualification",
+        "College Name",
+        "University Name",
         "Branch",
         "Graduation Year",
         "Candidate Type",
@@ -1761,9 +1976,11 @@ def admin_export_excel():
 
     ]
 
+
     worksheet.append(
         headings
     )
+
 
     # ------------------------------------------
     # Add applications
@@ -1781,6 +1998,8 @@ def admin_export_excel():
             application["dob"],
             application["gender"],
             application["qualification"],
+            application["college_name"],
+            application["university_name"],
             application["branch"],
             application["graduation_year"],
             application["candidate_type"],
@@ -1792,6 +2011,7 @@ def admin_export_excel():
             application["created_at"]
 
         ])
+
 
     # ------------------------------------------
     # Column widths
@@ -1807,17 +2027,20 @@ def admin_export_excel():
         "F": 15,
         "G": 12,
         "H": 20,
-        "I": 25,
-        "J": 18,
-        "K": 18,
-        "L": 15,
-        "M": 35,
-        "N": 40,
-        "O": 30,
-        "P": 18,
-        "Q": 22
+        "I": 38,
+        "J": 30,
+        "K": 25,
+        "L": 18,
+        "M": 18,
+        "N": 25,
+        "O": 35,
+        "P": 40,
+        "Q": 30,
+        "R": 18,
+        "S": 22
 
     }
+
 
     for column, width in column_widths.items():
 
@@ -1825,7 +2048,9 @@ def admin_export_excel():
             column
         ].width = width
 
+
     worksheet.freeze_panes = "A2"
+
 
     # ------------------------------------------
     # Save Excel file
@@ -1833,19 +2058,23 @@ def admin_export_excel():
 
     excel_folder = "generated_pdfs"
 
+
     os.makedirs(
         excel_folder,
         exist_ok=True
     )
+
 
     excel_path = os.path.join(
         excel_folder,
         "applications.xlsx"
     )
 
+
     workbook.save(
         excel_path
     )
+
 
     return send_file(
         excel_path,
@@ -1890,15 +2119,23 @@ def logout():
 def file_too_large(error):
 
     return """
-    <h2 style="text-align:center;margin-top:100px;">
+    <h2 style="
+        text-align:center;
+        margin-top:100px;
+        color:#ff4b00;
+    ">
         Resume file is too large.
     </h2>
 
-    <p style="text-align:center;">
+    <p style="
+        text-align:center;
+    ">
         Maximum allowed file size is 5 MB.
     </p>
 
-    <p style="text-align:center;">
+    <p style="
+        text-align:center;
+    ">
         <a href="/apply">
             Go Back
         </a>
@@ -1918,6 +2155,7 @@ if __name__ == "__main__":
             5000
         )
     )
+
 
     app.run(
         host="0.0.0.0",
