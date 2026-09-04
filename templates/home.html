@@ -1,198 +1,872 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Company Hiring Portal</title>
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Teckso | Careers</title>
 
     <style>
+
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            background: #f4f7fb;
-            color: #222;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f5f8fc;
+            color: #1f2937;
         }
+
+
+        /* ==========================================
+           NAVBAR
+           ========================================== */
 
         nav {
-            background: #123c69;
-            color: white;
-            padding: 18px 60px;
+            height: 76px;
+            background: #ffffff;
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
+            padding: 0 7%;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
-        nav h2 {
-            font-size: 24px;
-        }
 
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-            margin-left: 25px;
-        }
+        /* Logo */
 
-        .hero {
-            min-height: 500px;
+        .logo {
             display: flex;
             align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        .hero-content {
-            max-width: 700px;
-        }
-
-        .hero h1 {
-            font-size: 48px;
-            color: #123c69;
-            margin-bottom: 20px;
-        }
-
-        .hero p {
-            font-size: 20px;
-            color: #555;
-            line-height: 1.6;
-            margin-bottom: 35px;
-        }
-
-        .buttons a {
-            display: inline-block;
-            padding: 14px 28px;
-            margin: 8px;
-            border-radius: 6px;
+            gap: 10px;
             text-decoration: none;
-            font-size: 16px;
-            font-weight: bold;
         }
 
-        .apply-btn {
+        .logo-mark {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
             background: #123c69;
-            color: white;
-        }
-
-        .admin-btn {
-            background: white;
-            color: #123c69;
-            border: 2px solid #123c69;
-        }
-
-        .features {
+            color: #ffffff;
             display: flex;
+            align-items: center;
             justify-content: center;
-            gap: 25px;
-            padding: 40px;
+            font-size: 21px;
+            font-weight: 800;
+        }
+
+        .logo-text {
+            font-size: 25px;
+            font-weight: 800;
+            color: #123c69;
+            letter-spacing: 0.5px;
+        }
+
+
+        /* Navigation links */
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             flex-wrap: wrap;
         }
 
-        .card {
-            background: white;
-            width: 280px;
-            padding: 30px;
-            text-align: center;
-            border-radius: 10px;
-            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+        .nav-btn {
+            text-decoration: none;
+            padding: 10px 16px;
+            border-radius: 7px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: 0.2s ease;
         }
 
-        .card h3 {
+        .nav-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .login-btn {
             color: #123c69;
-            margin-bottom: 12px;
+            border: 1px solid #123c69;
+            background: #ffffff;
         }
 
-        .card p {
-            color: #666;
-            line-height: 1.5;
+        .register-btn {
+            color: #ffffff;
+            background: #123c69;
+            border: 1px solid #123c69;
         }
+
+        .admin-btn {
+            color: #123c69;
+            background: #eef5fc;
+            border: 1px solid #d5e3f2;
+        }
+
+        .admin-btn:hover {
+            background: #dceafa;
+        }
+
+
+        /* ==========================================
+           HERO SECTION
+           ========================================== */
+
+        .hero {
+            min-height: 610px;
+            padding: 80px 7%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 60px;
+            background:
+                linear-gradient(
+                    120deg,
+                    #eef5fc,
+                    #ffffff
+                );
+        }
+
+        .hero-content {
+            max-width: 640px;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #e1edf9;
+            color: #123c69;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            line-height: 1.08;
+            color: #123c69;
+            margin-bottom: 22px;
+        }
+
+        .hero h1 span {
+            color: #2563eb;
+        }
+
+        .hero p {
+            font-size: 19px;
+            line-height: 1.75;
+            color: #5b6472;
+            margin-bottom: 30px;
+        }
+
+
+        /* Hero buttons */
+
+        .hero-buttons {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .primary-btn,
+        .secondary-btn {
+            display: inline-block;
+            text-decoration: none;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            transition: 0.2s ease;
+        }
+
+        .primary-btn {
+            background: #123c69;
+            color: #ffffff;
+        }
+
+        .secondary-btn {
+            background: #ffffff;
+            color: #123c69;
+            border: 1px solid #123c69;
+        }
+
+        .primary-btn:hover,
+        .secondary-btn:hover {
+            transform: translateY(-2px);
+        }
+
+
+        /* ==========================================
+           HERO VISUAL
+           ========================================== */
+
+        .hero-visual {
+            width: 430px;
+            max-width: 100%;
+        }
+
+        .mobility-card {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow:
+                0 15px 40px rgba(18, 60, 105, 0.12);
+        }
+
+        .mobility-title {
+            color: #123c69;
+            font-size: 21px;
+            font-weight: 700;
+            margin-bottom: 25px;
+        }
+
+
+        /* Route */
+
+        .route {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 16px 0;
+        }
+
+        .location-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #2563eb;
+            flex-shrink: 0;
+        }
+
+        .route-line {
+            width: 3px;
+            height: 38px;
+            background: #c7d4e2;
+            margin-left: 6px;
+        }
+
+        .location-text {
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .mobility-info {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            line-height: 1.65;
+            font-size: 14px;
+        }
+
+
+        /* ==========================================
+           ABOUT TECKSO
+           ========================================== */
+
+        .about {
+            padding: 85px 7%;
+            background: #ffffff;
+            text-align: center;
+        }
+
+        .section-label {
+            color: #2563eb;
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
+        }
+
+        .about h2 {
+            color: #123c69;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .about-description {
+            max-width: 790px;
+            margin: auto;
+            color: #626b78;
+            font-size: 17px;
+            line-height: 1.85;
+        }
+
+
+        /* ==========================================
+           WHY TECKSO
+           ========================================== */
+
+        .values {
+            padding: 80px 7%;
+            background: #f5f8fc;
+        }
+
+        .values-heading {
+            text-align: center;
+            margin-bottom: 45px;
+        }
+
+        .values-heading h2 {
+            color: #123c69;
+            font-size: 35px;
+            margin-top: 8px;
+        }
+
+        .value-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .value-card {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow:
+                0 4px 18px rgba(0, 0, 0, 0.05);
+        }
+
+        .value-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 10px;
+            background: #e7f0fa;
+            color: #123c69;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 23px;
+            margin-bottom: 18px;
+        }
+
+        .value-card h3 {
+            color: #123c69;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .value-card p {
+            color: #6b7280;
+            line-height: 1.7;
+        }
+
+
+        /* ==========================================
+           CAREERS CTA
+           ========================================== */
+
+        .careers {
+            padding: 90px 7%;
+            background: #123c69;
+            text-align: center;
+            color: #ffffff;
+        }
+
+        .careers h2 {
+            font-size: 39px;
+            margin-bottom: 15px;
+        }
+
+        .careers p {
+            max-width: 680px;
+            margin: 0 auto 30px;
+            line-height: 1.75;
+            color: #dbe8f5;
+            font-size: 17px;
+        }
+
+        .career-btn {
+            display: inline-block;
+            background: #ffffff;
+            color: #123c69;
+            padding: 14px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 800;
+            transition: 0.2s ease;
+        }
+
+        .career-btn:hover {
+            transform: translateY(-2px);
+        }
+
+
+        /* ==========================================
+           FOOTER
+           ========================================== */
 
         footer {
-            background: #123c69;
-            color: white;
+            background: #0c2947;
+            color: #dbe8f5;
             text-align: center;
-            padding: 20px;
-            margin-top: 30px;
+            padding: 25px 7%;
+            font-size: 14px;
         }
+
+
+        /* ==========================================
+           RESPONSIVE DESIGN
+           ========================================== */
+
+        @media (max-width: 950px) {
+
+            .hero {
+                flex-direction: column;
+                text-align: center;
+                padding-top: 65px;
+                padding-bottom: 65px;
+            }
+
+            .hero-buttons {
+                justify-content: center;
+            }
+
+            .hero h1 {
+                font-size: 45px;
+            }
+
+            .hero-visual {
+                width: 520px;
+            }
+
+            .value-grid {
+                grid-template-columns: 1fr;
+                max-width: 550px;
+            }
+
+        }
+
+
+        @media (max-width: 650px) {
+
+            nav {
+                height: auto;
+                min-height: 76px;
+                padding: 14px 20px;
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+
+            .nav-links {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .nav-btn {
+                padding: 8px 11px;
+                font-size: 12px;
+            }
+
+            .logo-text {
+                font-size: 22px;
+            }
+
+            .hero {
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+
+            .hero h1 {
+                font-size: 37px;
+            }
+
+            .hero p {
+                font-size: 17px;
+            }
+
+            .hero-visual {
+                width: 100%;
+            }
+
+            .about,
+            .values,
+            .careers {
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+
+            .about h2,
+            .values-heading h2,
+            .careers h2 {
+                font-size: 29px;
+            }
+
+            .value-grid {
+                gap: 18px;
+            }
+
+        }
+
     </style>
+
 </head>
+
 
 <body>
 
-    <nav>
-        <h2>Company Hiring Portal</h2>
 
-        <div class="nav-links">
-            <a href="/">Home</a>
-            <a href="/login">Applicant Login</a>
-            <a href="/admin-login">Admin</a>
+<!-- ==========================================
+     NAVIGATION
+     ========================================== -->
+
+<nav>
+
+
+    <!-- TECKSO LOGO -->
+
+    <a
+        href="/"
+        class="logo"
+    >
+
+        <div class="logo-mark">
+            T
         </div>
-    </nav>
 
-    <section class="hero">
+        <div class="logo-text">
+            TECKSO
+        </div>
 
-        <div class="hero-content">
+    </a>
 
-            <h1>Build Your Career With Us</h1>
 
-            <p>
-                Welcome to our official hiring portal.
-                Apply for exciting career opportunities,
-                upload your resume, and track your application.
-            </p>
+    <!-- NAVIGATION BUTTONS -->
 
-            <div class="buttons">
+    <div class="nav-links">
 
-                <a href="/register" class="apply-btn">
-                    Apply Now
-                </a>
+        <a
+            href="/login"
+            class="nav-btn login-btn"
+        >
+            Applicant Login
+        </a>
 
-                <a href="/admin-login">
-    Owner / Admin Login
-</a>
+
+        <a
+            href="/register"
+            class="nav-btn register-btn"
+        >
+            Register
+        </a>
+
+
+        <a
+            href="/admin-login"
+            class="nav-btn admin-btn"
+        >
+            Admin Login
+        </a>
+
+    </div>
+
+</nav>
+
+
+
+<!-- ==========================================
+     HERO SECTION
+     ========================================== -->
+
+<section class="hero">
+
+
+    <!-- LEFT SIDE -->
+
+    <div class="hero-content">
+
+        <div class="tag">
+            CAREERS AT TECKSO
+        </div>
+
+
+        <h1>
+            Build the future of
+            <span>mobility</span>
+            with us.
+        </h1>
+
+
+        <p>
+            Join Teckso and help us create smarter
+            ways for people to connect, travel,
+            and move together.
+        </p>
+
+
+        <div class="hero-buttons">
+
+            <a
+                href="/register"
+                class="primary-btn"
+            >
+                Apply for a Position
+            </a>
+
+
+            <a
+                href="/login"
+                class="secondary-btn"
+            >
+                Applicant Login
+            </a>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- RIGHT SIDE -->
+
+    <div class="hero-visual">
+
+        <div class="mobility-card">
+
+
+            <div class="mobility-title">
+                Connecting Journeys
+            </div>
+
+
+            <!-- PLACE A -->
+
+            <div class="route">
+
+                <div class="location-dot"></div>
+
+                <div class="location-text">
+                    Place A
+                </div>
+
+            </div>
+
+
+            <div class="route-line"></div>
+
+
+            <!-- SHARED JOURNEY -->
+
+            <div class="route">
+
+                <div class="location-dot"></div>
+
+                <div class="location-text">
+                    Shared Journey
+                </div>
+
+            </div>
+
+
+            <div class="route-line"></div>
+
+
+            <!-- PLACE B -->
+
+            <div class="route">
+
+                <div class="location-dot"></div>
+
+                <div class="location-text">
+                    Place B
+                </div>
+
+            </div>
+
+
+            <div class="mobility-info">
+
+                Teckso is working toward smarter
+                mobility solutions that can make
+                everyday journeys more connected,
+                efficient, and rewarding.
 
             </div>
 
         </div>
 
-    </section>
+    </div>
 
-    <section class="features">
+</section>
 
-        <div class="card">
-            <h3>Easy Application</h3>
-            <p>
-                Complete your application online
-                in just a few simple steps.
-            </p>
+
+
+<!-- ==========================================
+     ABOUT TECKSO
+     ========================================== -->
+
+<section class="about">
+
+    <div class="section-label">
+        About Teckso
+    </div>
+
+
+    <h2>
+        Technology that connects people
+    </h2>
+
+
+    <p class="about-description">
+
+        Teckso is building technology for a
+        more connected mobility ecosystem.
+        Our vision is to make it easier for
+        people traveling along similar routes
+        to connect and make better use of
+        journeys already happening.
+
+    </p>
+
+</section>
+
+
+
+<!-- ==========================================
+     WHY TECKSO
+     ========================================== -->
+
+<section class="values">
+
+
+    <div class="values-heading">
+
+        <div class="section-label">
+            Why Teckso
         </div>
 
-        <div class="card">
-            <h3>Resume Upload</h3>
+        <h2>
+            Be part of something meaningful
+        </h2>
+
+    </div>
+
+
+    <div class="value-grid">
+
+
+        <!-- Innovation -->
+
+        <div class="value-card">
+
+            <div class="value-icon">
+                🚀
+            </div>
+
+            <h3>
+                Innovation
+            </h3>
+
             <p>
-                Upload your latest resume along
-                with your application.
+                Work on technology that aims to
+                solve real-world mobility challenges
+                through practical innovation.
             </p>
+
         </div>
 
-        <div class="card">
-            <h3>Track Application</h3>
+
+        <!-- Collaboration -->
+
+        <div class="value-card">
+
+            <div class="value-icon">
+                🤝
+            </div>
+
+            <h3>
+                Collaboration
+            </h3>
+
             <p>
-                Check your application status
-                after submitting.
+                Join a team where ideas are shared,
+                different perspectives matter,
+                and everyone contributes.
             </p>
+
         </div>
 
-    </section>
 
-    <footer>
-        <p>© 2026 Company Hiring Portal. All Rights Reserved.</p>
-    </footer>
+        <!-- Impact -->
+
+        <div class="value-card">
+
+            <div class="value-icon">
+                🌍
+            </div>
+
+            <h3>
+                Real-world Impact
+            </h3>
+
+            <p>
+                Help build products designed to
+                make everyday transportation more
+                connected and accessible.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- ==========================================
+     CAREERS CTA
+     ========================================== -->
+
+<section class="careers">
+
+    <h2>
+        Ready to join Teckso?
+    </h2>
+
+
+    <p>
+        Explore opportunities with us and take
+        the next step in your career.
+    </p>
+
+
+    <a
+        href="/register"
+        class="career-btn"
+    >
+        Start Your Application
+    </a>
+
+</section>
+
+
+
+<!-- ==========================================
+     FOOTER
+     ========================================== -->
+
+<footer>
+
+    © 2026 Teckso. All rights reserved.
+
+</footer>
+
 
 </body>
+
 </html>

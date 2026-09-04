@@ -1,71 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Applicant Login</title>
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Teckso | Admin Login</title>
 
     <style>
+
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             background: #f4f7fb;
             min-height: 100vh;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column;
         }
 
-        .login-container {
-            width: 400px;
+        /* ==========================
+           NAVBAR
+           ========================== */
+
+        nav {
+            background: white;
+            height: 72px;
+            padding: 0 7%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow:
+                0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .logo {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-mark {
+            width: 40px;
+            height: 40px;
+            border-radius: 9px;
+            background: #123c69;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 19px;
+        }
+
+        .logo-text {
+            color: #123c69;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .home-link {
+            text-decoration: none;
+            color: #123c69;
+            font-weight: 600;
+        }
+
+        /* ==========================
+           LOGIN AREA
+           ========================== */
+
+        .page {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .login-card {
+            width: 430px;
+            max-width: 100%;
             background: white;
             padding: 40px;
+            border-radius: 14px;
+            box-shadow:
+                0 10px 35px rgba(18,60,105,0.10);
+        }
+
+        .icon {
+            width: 58px;
+            height: 58px;
+            margin: 0 auto 20px;
             border-radius: 12px;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            background: #e7f0fa;
+            color: #123c69;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 27px;
         }
 
         h1 {
             text-align: center;
             color: #123c69;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            font-size: 28px;
         }
 
         .subtitle {
             text-align: center;
-            color: #666;
+            color: #6b7280;
             margin-bottom: 30px;
+        }
+
+        .error {
+            background: #fde2e2;
+            color: #b42318;
+            padding: 12px;
+            border-radius: 7px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
         }
 
         label {
             display: block;
-            font-weight: bold;
+            color: #374151;
+            font-weight: 600;
             margin-bottom: 7px;
         }
 
         input {
             width: 100%;
             padding: 13px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            border-radius: 7px;
             font-size: 15px;
+            margin-bottom: 18px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #2563eb;
+            box-shadow:
+                0 0 0 3px rgba(37,99,235,0.10);
         }
 
         button {
             width: 100%;
-            padding: 13px;
+            padding: 14px;
+            border: none;
+            border-radius: 7px;
             background: #123c69;
             color: white;
-            border: none;
-            border-radius: 6px;
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 700;
             cursor: pointer;
         }
 
@@ -73,90 +170,184 @@
             background: #0d2d50;
         }
 
-        .register {
+        .back {
+            display: block;
             text-align: center;
-            margin-top: 20px;
-        }
-
-        .register a {
+            margin-top: 22px;
             color: #123c69;
             text-decoration: none;
-            font-weight: bold;
+            font-weight: 600;
         }
 
-        .back {
+        .security-note {
+            margin-top: 22px;
+            padding: 12px;
+            background: #f5f8fc;
+            border-radius: 7px;
+            color: #6b7280;
             text-align: center;
-            margin-top: 15px;
+            font-size: 13px;
+            line-height: 1.5;
         }
 
-        .back a {
-            color: #666;
-            text-decoration: none;
-        }
+        /* ==========================
+           FOOTER
+           ========================== */
 
-        .error {
-            background: #ffe5e5;
-            color: #b00020;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+        footer {
+            background: #0c2947;
+            color: #dbe8f5;
             text-align: center;
+            padding: 20px;
+            font-size: 13px;
         }
+
+        @media (max-width: 500px) {
+
+            .login-card {
+                padding: 28px 22px;
+            }
+
+            .logo-text {
+                font-size: 20px;
+            }
+
+        }
+
     </style>
+
 </head>
+
 
 <body>
 
-<div class="login-container">
 
-    <h1>Applicant Login</h1>
+<!-- ==========================
+     NAVBAR
+     ========================== -->
 
-    <p class="subtitle">
-        Login to continue your application
-    </p>
+<nav>
 
-    {% if error %}
+    <a href="/" class="logo">
+
+        <div class="logo-mark">
+            T
+        </div>
+
+        <div class="logo-text">
+            TECKSO
+        </div>
+
+    </a>
+
+    <a
+        href="/"
+        class="home-link"
+    >
+        ← Home
+    </a>
+
+</nav>
+
+
+<!-- ==========================
+     LOGIN
+     ========================== -->
+
+<div class="page">
+
+    <div class="login-card">
+
+        <div class="icon">
+            🔐
+        </div>
+
+        <h1>
+            Admin Login
+        </h1>
+
+        <p class="subtitle">
+            Teckso Hiring Portal
+        </p>
+
+
+        {% if error %}
+
         <div class="error">
             {{ error }}
         </div>
-    {% endif %}
 
-    <form method="POST">
+        {% endif %}
 
-        <label>Email</label>
 
-        <input
-            type="email"
-            name="email"
-            placeholder="Enter your email"
-            required
+        <form
+            method="POST"
+            action="/admin-login"
         >
 
-        <label>Password</label>
+            <label for="username">
+                Username
+            </label>
 
-        <input
-            type="password"
-            name="password"
-            placeholder="Enter your password"
-            required
+            <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="Enter admin username"
+                required
+                autocomplete="username"
+            >
+
+
+            <label for="password">
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Enter admin password"
+                required
+                autocomplete="current-password"
+            >
+
+
+            <button type="submit">
+                Login to Admin Dashboard
+            </button>
+
+        </form>
+
+
+        <div class="security-note">
+            Authorized Teckso administrators only.
+        </div>
+
+
+        <a
+            href="/"
+            class="back"
         >
+            ← Back to Teckso Careers
+        </a>
 
-        <button type="submit">
-            Login
-        </button>
-
-    </form>
-
-    <div class="register">
-        Don't have an account?
-        <a href="/register">Create Account</a>
-    </div>
-
-    <div class="back">
-        <a href="/">← Back to Home</a>
     </div>
 
 </div>
 
+
+<!-- ==========================
+     FOOTER
+     ========================== -->
+
+<footer>
+
+    © 2026 Teckso. All rights reserved.
+
+</footer>
+
+
 </body>
+
 </html>

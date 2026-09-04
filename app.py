@@ -45,12 +45,22 @@ import os
 
 app = Flask(__name__)
 
-# Secret key
-# For deployment, set SECRET_KEY as an environment variable.
+
+# ==================================================
+# SESSION CONFIGURATION
+# ==================================================
+
 app.secret_key = os.environ.get(
     "SECRET_KEY",
-    "development-secret-key-change-before-production"
+    "change-this-secret-key-before-production"
 )
+
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = False
+
+# Session lifetime = 24 hours
+app.permanent_session_lifetime = 60 * 60 * 24
 
 
 # ==================================================
@@ -70,8 +80,10 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # Maximum resume size = 5 MB
 app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 
-# Create upload folder
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(
+    UPLOAD_FOLDER,
+    exist_ok=True
+)
 
 
 # ==================================================
@@ -82,53 +94,63 @@ init_db()
 
 
 # ==================================================
-# HELPER FUNCTIONS
+# HELPER FUNCTION
 # ==================================================
 
 def allowed_file(filename):
 
     return (
         "." in filename
-        and filename.rsplit(".", 1)[1].lower()
-        in ALLOWED_EXTENSIONS
+        and filename.rsplit(
+            ".",
+            1
+        )[1].lower() in ALLOWED_EXTENSIONS
     )
 
 
 # ==================================================
-# HOME
+# HOME PAGE
 # ==================================================
 
 @app.route("/")
 def home():
 
-    return render_template("home.html")
+    return render_template(
+        "home.html"
+    )
 
 
 # ==================================================
 # APPLICANT REGISTRATION
 # ==================================================
 
-@app.route("/register", methods=["GET", "POST"])
+@app.route(
+    "/register",
+    methods=["GET", "POST"]
+)
 def register():
 
     if request.method == "POST":
 
-        name = request.form["name"].strip()
+        name = request.form[
+            "name"
+        ].strip()
 
-        email = request.form["email"].strip().lower()
+        email = request.form[
+            "email"
+        ].strip().lower()
 
-        mobile = request.form["mobile"].strip()
+        mobile = request.form[
+            "mobile"
+        ].strip()
 
-        password = request.form["password"]
-
+        password = request.form[
+            "password"
+        ]
 
         connection = get_db_connection()
 
-
-        # ------------------------------------------
         # Check duplicate email
-        # ------------------------------------------
-
         existing_email = connection.execute(
             """
             SELECT id
@@ -137,7 +159,6 @@ def register():
             """,
             (email,)
         ).fetchone()
-
 
         if existing_email:
 
@@ -148,11 +169,7 @@ def register():
                 error="Email already registered."
             )
 
-
-        # ------------------------------------------
         # Check duplicate mobile
-        # ------------------------------------------
-
         existing_mobile = connection.execute(
             """
             SELECT id
@@ -161,7 +178,6 @@ def register():
             """,
             (mobile,)
         ).fetchone()
-
 
         if existing_mobile:
 
@@ -172,20 +188,12 @@ def register():
                 error="Mobile number already registered."
             )
 
-
-        # ------------------------------------------
         # Hash password
-        # ------------------------------------------
-
         hashed_password = generate_password_hash(
             password
         )
 
-
-        # ------------------------------------------
         # Create user
-        # ------------------------------------------
-
         connection.execute(
             """
             INSERT INTO users (
@@ -204,16 +212,12 @@ def register():
             )
         )
 
-
         connection.commit()
-
         connection.close()
-
 
         return redirect(
             url_for("login")
         )
-
 
     return render_template(
         "register.html"
@@ -224,18 +228,23 @@ def register():
 # APPLICANT LOGIN
 # ==================================================
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route(
+    "/login",
+    methods=["GET", "POST"]
+)
 def login():
 
     if request.method == "POST":
 
-        email = request.form["email"].strip().lower()
+        email = request.form[
+            "email"
+        ].strip().lower()
 
-        password = request.form["password"]
-
+        password = request.form[
+            "password"
+        ]
 
         connection = get_db_connection()
-
 
         user = connection.execute(
             """
@@ -246,34 +255,30 @@ def login():
             (email,)
         ).fetchone()
 
-
         connection.close()
-
 
         if user and check_password_hash(
             user["password"],
             password
         ):
 
+            session.clear()
+
+            session.permanent = True
+
             session["user_id"] = user["id"]
-
             session["user_name"] = user["name"]
-
             session["user_email"] = user["email"]
-
             session["user_mobile"] = user["mobile"]
-
 
             return redirect(
                 url_for("applicant_home")
             )
 
-
         return render_template(
             "login.html",
             error="Invalid email or password."
         )
-
 
     return render_template(
         "login.html"
@@ -293,24 +298,19 @@ def applicant_home():
             url_for("login")
         )
 
-
     connection = get_db_connection()
-
 
     application = connection.execute(
         """
         SELECT *
         FROM applications
         WHERE user_id = ?
-        ORDER BY id DESC
         LIMIT 1
         """,
         (session["user_id"],)
     ).fetchone()
 
-
     connection.close()
-
 
     return render_template(
         "applicant_home.html",
@@ -320,10 +320,18 @@ def applicant_home():
 
 # ==================================================
 # JOB APPLICATION
+# ONE APPLICANT = ONE APPLICATION
 # ==================================================
 
-@app.route("/apply", methods=["GET", "POST"])
+@app.route(
+    "/apply",
+    methods=["GET", "POST"]
+)
 def apply():
+
+    # ------------------------------------------
+    # Applicant must be logged in
+    # ------------------------------------------
 
     if "user_id" not in session:
 
@@ -332,57 +340,208 @@ def apply():
         )
 
 
+    # ------------------------------------------
+    # Check existing application
+    # ------------------------------------------
+
+    connection = get_db_connection()
+
+    existing_application = connection.execute(
+        """
+        SELECT id, position
+        FROM applications
+        WHERE user_id = ?
+        LIMIT 1
+        """,
+        (session["user_id"],)
+    ).fetchone()
+
+    connection.close()
+
+
+    # ------------------------------------------
+    # Prevent second application
+    # ------------------------------------------
+
+    if existing_application:
+
+        return f"""
+        <!DOCTYPE html>
+        <html>
+
+        <head>
+
+            <title>Application Already Submitted</title>
+
+            <style>
+
+                body {{
+                    font-family: Arial, sans-serif;
+                    background: #f4f7fb;
+                    text-align: center;
+                    padding-top: 100px;
+                }}
+
+                .box {{
+                    background: white;
+                    width: 500px;
+                    max-width: 90%;
+                    margin: auto;
+                    padding: 40px;
+                    border-radius: 12px;
+                    box-shadow:
+                        0 4px 15px
+                        rgba(0,0,0,0.1);
+                }}
+
+                h2 {{
+                    color: #dc3545;
+                    margin-bottom: 20px;
+                }}
+
+                p {{
+                    color: #555;
+                    margin-bottom: 15px;
+                }}
+
+                a {{
+                    display: inline-block;
+                    background: #2563eb;
+                    color: white;
+                    text-decoration: none;
+                    padding: 12px 20px;
+                    border-radius: 6px;
+                }}
+
+            </style>
+
+        </head>
+
+        <body>
+
+            <div class="box">
+
+                <h2>
+                    ⚠️ Application Already Submitted
+                </h2>
+
+                <p>
+                    You have already applied for:
+                </p>
+
+                <p>
+                    <strong>
+                        {existing_application["position"]}
+                    </strong>
+                </p>
+
+                <p>
+                    One applicant can submit only one application.
+                </p>
+
+                <a href="/my-application">
+                    View My Application
+                </a>
+
+            </div>
+
+        </body>
+
+        </html>
+        """
+
+
+    # ------------------------------------------
+    # Process application
+    # ------------------------------------------
+
     if request.method == "POST":
 
-        position = request.form["position"]
+        position = request.form.get(
+            "position",
+            ""
+        ).strip()
 
-        name = request.form["name"].strip()
+        name = request.form.get(
+            "name",
+            ""
+        ).strip()
 
-        email = request.form["email"].strip().lower()
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
 
-        mobile = request.form["mobile"].strip()
+        mobile = request.form.get(
+            "mobile",
+            ""
+        ).strip()
 
-        dob = request.form["dob"]
+        dob = request.form.get(
+            "dob",
+            ""
+        ).strip()
 
-        gender = request.form["gender"]
+        gender = request.form.get(
+            "gender",
+            ""
+        ).strip()
 
-        qualification = request.form["qualification"]
+        qualification = request.form.get(
+            "qualification",
+            ""
+        ).strip()
 
-        branch = request.form["branch"]
+        branch = request.form.get(
+            "branch",
+            ""
+        ).strip()
 
-        graduation_year = request.form["graduation_year"]
+        graduation_year = request.form.get(
+            "graduation_year",
+            ""
+        ).strip()
 
-        candidate_type = request.form["candidate_type"]
+        candidate_type = request.form.get(
+            "candidate_type",
+            "Fresher"
+        ).strip()
 
         experience = request.form.get(
             "experience",
             ""
         ).strip()
 
-        skills = request.form["skills"].strip()
+        skills = request.form.get(
+            "skills",
+            ""
+        ).strip()
 
-        address = request.form["address"].strip()
+        address = request.form.get(
+            "address",
+            ""
+        ).strip()
 
+
+        # ------------------------------------------
+        # Open database
+        # ------------------------------------------
 
         connection = get_db_connection()
 
 
         # ------------------------------------------
-        # Check duplicate email OR mobile
+        # Double-check one application rule
         # ------------------------------------------
 
         existing_application = connection.execute(
             """
-            SELECT id, email, mobile
+            SELECT id, position
             FROM applications
-            WHERE LOWER(email) = LOWER(?)
-               OR mobile = ?
+            WHERE user_id = ?
             LIMIT 1
             """,
-            (
-                email,
-                mobile
-            )
+            (session["user_id"],)
         ).fetchone()
 
 
@@ -390,100 +549,9 @@ def apply():
 
             connection.close()
 
-
-            if (
-                existing_application["email"].lower()
-                == email
-            ):
-
-                message = (
-                    "An application already exists "
-                    "with this email address."
-                )
-
-            else:
-
-                message = (
-                    "An application already exists "
-                    "with this mobile number."
-                )
-
-
-            return f"""
-            <!DOCTYPE html>
-
-            <html>
-
-            <head>
-
-                <title>Duplicate Application</title>
-
-                <style>
-
-                    body {{
-                        font-family: Arial, sans-serif;
-                        background: #f4f7fb;
-                        text-align: center;
-                        padding-top: 100px;
-                    }}
-
-                    .box {{
-                        background: white;
-                        width: 500px;
-                        max-width: 90%;
-                        margin: auto;
-                        padding: 40px;
-                        border-radius: 12px;
-                        box-shadow:
-                            0 4px 15px
-                            rgba(0,0,0,0.1);
-                    }}
-
-                    h2 {{
-                        color: #dc3545;
-                        margin-bottom: 15px;
-                    }}
-
-                    p {{
-                        color: #555;
-                        margin-bottom: 25px;
-                    }}
-
-                    a {{
-                        display: inline-block;
-                        background: #2563eb;
-                        color: white;
-                        text-decoration: none;
-                        padding: 12px 20px;
-                        border-radius: 6px;
-                    }}
-
-                </style>
-
-            </head>
-
-            <body>
-
-                <div class="box">
-
-                    <h2>
-                        ⚠️ Duplicate Application
-                    </h2>
-
-                    <p>
-                        {message}
-                    </p>
-
-                    <a href="/applicant-home">
-                        Go to Dashboard
-                    </a>
-
-                </div>
-
-            </body>
-
-            </html>
-            """
+            return redirect(
+                url_for("my_application")
+            )
 
 
         # ------------------------------------------
@@ -499,6 +567,7 @@ def apply():
 
         if resume and resume.filename:
 
+            # Validate extension
             if not allowed_file(
                 resume.filename
             ):
@@ -513,13 +582,13 @@ def apply():
                 )
 
 
-            resume_filename = secure_filename(
+            # Secure original filename
+            original_filename = secure_filename(
                 resume.filename
             )
 
 
-            # Avoid accidental path traversal
-            if not resume_filename:
+            if not original_filename:
 
                 connection.close()
 
@@ -527,6 +596,21 @@ def apply():
                     "Invalid resume filename.",
                     400
                 )
+
+
+            # ------------------------------------------
+            # Create unique filename
+            # ------------------------------------------
+
+            base_name, extension = os.path.splitext(
+                original_filename
+            )
+
+            resume_filename = (
+                f"{session['user_id']}_"
+                f"{base_name}"
+                f"{extension}"
+            )
 
 
             resume_path = os.path.join(
@@ -549,33 +633,19 @@ def apply():
             INSERT INTO applications (
 
                 user_id,
-
                 position,
-
                 name,
-
                 email,
-
                 mobile,
-
                 dob,
-
                 gender,
-
                 qualification,
-
                 branch,
-
                 graduation_year,
-
                 candidate_type,
-
                 experience,
-
                 skills,
-
                 address,
-
                 resume_filename
 
             )
@@ -600,33 +670,19 @@ def apply():
             """,
             (
                 session["user_id"],
-
                 position,
-
                 name,
-
                 email,
-
                 mobile,
-
                 dob,
-
                 gender,
-
                 qualification,
-
                 branch,
-
                 graduation_year,
-
                 candidate_type,
-
                 experience,
-
                 skills,
-
                 address,
-
                 resume_filename
             )
         )
@@ -636,6 +692,10 @@ def apply():
 
         connection.close()
 
+
+        # ------------------------------------------
+        # Success page
+        # ------------------------------------------
 
         return """
         <!DOCTYPE html>
@@ -672,6 +732,11 @@ def apply():
                     margin-bottom: 20px;
                 }
 
+                p {
+                    color: #555;
+                    margin-bottom: 20px;
+                }
+
                 a {
                     display: inline-block;
                     background: #2563eb;
@@ -693,6 +758,15 @@ def apply():
                     ✅ Application Submitted Successfully!
                 </h2>
 
+                <p>
+                    Your application has been submitted successfully.
+                </p>
+
+                <p>
+                    You cannot submit another application
+                    using this account.
+                </p>
+
                 <a href="/applicant-home">
                     Go to Dashboard
                 </a>
@@ -704,6 +778,10 @@ def apply():
         </html>
         """
 
+
+    # ------------------------------------------
+    # Show application form
+    # ------------------------------------------
 
     return render_template(
         "apply.html"
@@ -723,24 +801,19 @@ def my_application():
             url_for("login")
         )
 
-
     connection = get_db_connection()
-
 
     application = connection.execute(
         """
         SELECT *
         FROM applications
         WHERE user_id = ?
-        ORDER BY id DESC
         LIMIT 1
         """,
         (session["user_id"],)
     ).fetchone()
 
-
     connection.close()
-
 
     return render_template(
         "my_application.html",
@@ -763,9 +836,7 @@ def download_resume(application_id):
             url_for("login")
         )
 
-
     connection = get_db_connection()
-
 
     application = connection.execute(
         """
@@ -780,9 +851,7 @@ def download_resume(application_id):
         )
     ).fetchone()
 
-
     connection.close()
-
 
     if not application:
 
@@ -792,11 +861,9 @@ def download_resume(application_id):
             404
         )
 
-
     resume_filename = (
         application["resume_filename"]
     )
-
 
     if not resume_filename:
 
@@ -805,12 +872,10 @@ def download_resume(application_id):
             404
         )
 
-
     resume_path = os.path.join(
         app.config["UPLOAD_FOLDER"],
         resume_filename
     )
-
 
     if not os.path.isfile(
         resume_path
@@ -820,7 +885,6 @@ def download_resume(application_id):
             "Resume file not found.",
             404
         )
-
 
     return send_from_directory(
         app.config["UPLOAD_FOLDER"],
@@ -842,24 +906,19 @@ def download_application():
             url_for("login")
         )
 
-
     connection = get_db_connection()
-
 
     application = connection.execute(
         """
         SELECT *
         FROM applications
         WHERE user_id = ?
-        ORDER BY id DESC
         LIMIT 1
         """,
         (session["user_id"],)
     ).fetchone()
 
-
     connection.close()
-
 
     if not application:
 
@@ -868,11 +927,7 @@ def download_application():
             404
         )
 
-
-    # ------------------------------------------
     # PDF folder
-    # ------------------------------------------
-
     pdf_folder = "generated_pdfs"
 
     os.makedirs(
@@ -880,19 +935,16 @@ def download_application():
         exist_ok=True
     )
 
-
     pdf_filename = (
         "application_"
         + str(application["id"])
         + ".pdf"
     )
 
-
     pdf_path = os.path.join(
         pdf_folder,
         pdf_filename
     )
-
 
     # ------------------------------------------
     # Create PDF
@@ -907,9 +959,7 @@ def download_application():
         bottomMargin=40
     )
 
-
     styles = getSampleStyleSheet()
-
 
     title_style = ParagraphStyle(
         "TitleStyle",
@@ -919,14 +969,12 @@ def download_application():
         spaceAfter=10
     )
 
-
     normal_style = ParagraphStyle(
         "NormalStyle",
         parent=styles["Normal"],
         fontSize=10,
         leading=15
     )
-
 
     subtitle_style = ParagraphStyle(
         "SubtitleStyle",
@@ -935,7 +983,6 @@ def download_application():
         spaceAfter=20
     )
 
-
     footer_style = ParagraphStyle(
         "FooterStyle",
         parent=normal_style,
@@ -943,9 +990,7 @@ def download_application():
         fontSize=8
     )
 
-
     story = []
-
 
     story.append(
         Paragraph(
@@ -954,14 +999,12 @@ def download_application():
         )
     )
 
-
     story.append(
         Paragraph(
             "JOB APPLICATION",
             subtitle_style
         )
     )
-
 
     story.append(
         Paragraph(
@@ -971,11 +1014,9 @@ def download_application():
         )
     )
 
-
     story.append(
         Spacer(1, 8)
     )
-
 
     story.append(
         Paragraph(
@@ -985,15 +1026,9 @@ def download_application():
         )
     )
 
-
     story.append(
         Spacer(1, 20)
     )
-
-
-    # ------------------------------------------
-    # Application data
-    # ------------------------------------------
 
     data = [
 
@@ -1076,7 +1111,6 @@ def download_application():
 
     ]
 
-
     table = Table(
         data,
         colWidths=[
@@ -1085,7 +1119,6 @@ def download_application():
         ],
         repeatRows=1
     )
-
 
     table.setStyle(
         TableStyle([
@@ -1171,14 +1204,13 @@ def download_application():
         ])
     )
 
-
-    story.append(table)
-
+    story.append(
+        table
+    )
 
     story.append(
         Spacer(1, 25)
     )
-
 
     story.append(
         Paragraph(
@@ -1188,9 +1220,9 @@ def download_application():
         )
     )
 
-
-    document.build(story)
-
+    document.build(
+        story
+    )
 
     return send_file(
         pdf_path,
@@ -1209,10 +1241,6 @@ def download_application():
 )
 def admin_login():
 
-    # Development credentials
-    # We will move these to environment
-    # variables before production.
-
     ADMIN_USERNAME = os.environ.get(
         "ADMIN_USERNAME",
         "admin"
@@ -1220,9 +1248,8 @@ def admin_login():
 
     ADMIN_PASSWORD = os.environ.get(
         "ADMIN_PASSWORD",
-        "admin123"
+        "trekso1245"
     )
-
 
     if request.method == "POST":
 
@@ -1234,21 +1261,22 @@ def admin_login():
             "password"
         ]
 
-
         if (
             username == ADMIN_USERNAME
             and password == ADMIN_PASSWORD
         ):
 
+            session.clear()
+
+            session.permanent = True
+
             session[
                 "admin_logged_in"
             ] = True
 
-
             return redirect(
                 url_for("admin_dashboard")
             )
-
 
         return render_template(
             "admin_login.html",
@@ -1257,7 +1285,6 @@ def admin_login():
                 "or password."
             )
         )
-
 
     return render_template(
         "admin_login.html"
@@ -1279,25 +1306,17 @@ def admin_dashboard():
             url_for("admin_login")
         )
 
-
     search = request.args.get(
         "search",
         ""
     ).strip()
-
 
     status_filter = request.args.get(
         "status",
         ""
     ).strip()
 
-
     connection = get_db_connection()
-
-
-    # ------------------------------------------
-    # Applications query
-    # ------------------------------------------
 
     query = """
         SELECT *
@@ -1305,9 +1324,7 @@ def admin_dashboard():
         WHERE 1 = 1
     """
 
-
     parameters = []
-
 
     if search:
 
@@ -1322,11 +1339,7 @@ def admin_dashboard():
             )
         """
 
-
-        search_value = (
-            f"%{search}%"
-        )
-
+        search_value = f"%{search}%"
 
         parameters.extend([
             search_value,
@@ -1337,29 +1350,24 @@ def admin_dashboard():
             search_value
         ])
 
-
     if status_filter:
 
         query += """
             AND status = ?
         """
 
-
         parameters.append(
             status_filter
         )
-
 
     query += """
         ORDER BY id DESC
     """
 
-
     applications = connection.execute(
         query,
         parameters
     ).fetchall()
-
 
     # ------------------------------------------
     # Statistics
@@ -1372,7 +1380,6 @@ def admin_dashboard():
         """
     ).fetchone()[0]
 
-
     submitted_count = connection.execute(
         """
         SELECT COUNT(*)
@@ -1380,7 +1387,6 @@ def admin_dashboard():
         WHERE status = 'Submitted'
         """
     ).fetchone()[0]
-
 
     selected_count = connection.execute(
         """
@@ -1390,7 +1396,6 @@ def admin_dashboard():
         """
     ).fetchone()[0]
 
-
     shortlisted_count = connection.execute(
         """
         SELECT COUNT(*)
@@ -1399,25 +1404,16 @@ def admin_dashboard():
         """
     ).fetchone()[0]
 
-
     connection.close()
-
 
     return render_template(
         "admin_dashboard.html",
-
         applications=applications,
-
         total_count=total_count,
-
         submitted_count=submitted_count,
-
         selected_count=selected_count,
-
         shortlisted_count=shortlisted_count,
-
         search=search,
-
         status_filter=status_filter
     )
 
@@ -1441,9 +1437,7 @@ def admin_view_application(
             url_for("admin_login")
         )
 
-
     connection = get_db_connection()
-
 
     application = connection.execute(
         """
@@ -1454,9 +1448,7 @@ def admin_view_application(
         (application_id,)
     ).fetchone()
 
-
     connection.close()
-
 
     if not application:
 
@@ -1464,7 +1456,6 @@ def admin_view_application(
             "Application not found.",
             404
         )
-
 
     return render_template(
         "admin_application.html",
@@ -1492,11 +1483,9 @@ def update_application_status(
             url_for("admin_login")
         )
 
-
     new_status = request.form.get(
         "status"
     )
-
 
     allowed_statuses = {
         "Submitted",
@@ -1506,7 +1495,6 @@ def update_application_status(
         "Rejected"
     }
 
-
     if new_status not in allowed_statuses:
 
         return (
@@ -1514,9 +1502,7 @@ def update_application_status(
             400
         )
 
-
     connection = get_db_connection()
-
 
     application = connection.execute(
         """
@@ -1527,7 +1513,6 @@ def update_application_status(
         (application_id,)
     ).fetchone()
 
-
     if not application:
 
         connection.close()
@@ -1536,7 +1521,6 @@ def update_application_status(
             "Application not found.",
             404
         )
-
 
     connection.execute(
         """
@@ -1550,11 +1534,8 @@ def update_application_status(
         )
     )
 
-
     connection.commit()
-
     connection.close()
-
 
     return redirect(
         url_for(
@@ -1563,7 +1544,93 @@ def update_application_status(
         )
     )
 
+# ==================================================
+# ADMIN DELETE APPLICATION
+# ==================================================
 
+@app.route(
+    "/admin-delete-application/<int:application_id>",
+    methods=["POST"]
+)
+def admin_delete_application(application_id):
+
+    # Admin must be logged in
+    if not session.get(
+        "admin_logged_in"
+    ):
+        return redirect(
+            url_for("admin_login")
+        )
+
+    connection = get_db_connection()
+
+    # ------------------------------------------
+    # Find application
+    # ------------------------------------------
+
+    application = connection.execute(
+        """
+        SELECT id, resume_filename
+        FROM applications
+        WHERE id = ?
+        """,
+        (application_id,)
+    ).fetchone()
+
+    if not application:
+
+        connection.close()
+
+        return (
+            "Application not found.",
+            404
+        )
+
+    # ------------------------------------------
+    # Delete resume file
+    # ------------------------------------------
+
+    resume_filename = application[
+        "resume_filename"
+    ]
+
+    if resume_filename:
+
+        resume_path = os.path.join(
+            app.config["UPLOAD_FOLDER"],
+            resume_filename
+        )
+
+        if os.path.isfile(
+            resume_path
+        ):
+            os.remove(
+                resume_path
+            )
+
+    # ------------------------------------------
+    # Delete application from database
+    # ------------------------------------------
+
+    connection.execute(
+        """
+        DELETE FROM applications
+        WHERE id = ?
+        """,
+        (application_id,)
+    )
+
+    connection.commit()
+
+    connection.close()
+
+    # ------------------------------------------
+    # Return to dashboard
+    # ------------------------------------------
+
+    return redirect(
+        url_for("admin_dashboard")
+    )
 # ==================================================
 # ADMIN DOWNLOAD RESUME
 # ==================================================
@@ -1583,9 +1650,7 @@ def admin_download_resume(
             url_for("admin_login")
         )
 
-
     connection = get_db_connection()
-
 
     application = connection.execute(
         """
@@ -1596,9 +1661,7 @@ def admin_download_resume(
         (application_id,)
     ).fetchone()
 
-
     connection.close()
-
 
     if not application:
 
@@ -1607,11 +1670,9 @@ def admin_download_resume(
             404
         )
 
-
     resume_filename = (
         application["resume_filename"]
     )
-
 
     if not resume_filename:
 
@@ -1620,12 +1681,10 @@ def admin_download_resume(
             404
         )
 
-
     resume_path = os.path.join(
         app.config["UPLOAD_FOLDER"],
         resume_filename
     )
-
 
     if not os.path.isfile(
         resume_path
@@ -1635,7 +1694,6 @@ def admin_download_resume(
             "Resume file not found.",
             404
         )
-
 
     return send_from_directory(
         app.config["UPLOAD_FOLDER"],
@@ -1659,9 +1717,7 @@ def admin_export_excel():
             url_for("admin_login")
         )
 
-
     connection = get_db_connection()
-
 
     applications = connection.execute(
         """
@@ -1671,9 +1727,7 @@ def admin_export_excel():
         """
     ).fetchall()
 
-
     connection.close()
-
 
     # ------------------------------------------
     # Create workbook
@@ -1681,56 +1735,35 @@ def admin_export_excel():
 
     workbook = Workbook()
 
-
     worksheet = workbook.active
 
-
     worksheet.title = "Applications"
-
 
     headings = [
 
         "Application ID",
-
         "Position",
-
         "Name",
-
         "Email",
-
         "Mobile",
-
         "Date of Birth",
-
         "Gender",
-
         "Qualification",
-
         "Branch",
-
         "Graduation Year",
-
         "Candidate Type",
-
         "Experience",
-
         "Skills",
-
         "Address",
-
         "Resume",
-
         "Status",
-
         "Submitted On"
 
     ]
 
-
     worksheet.append(
         headings
     )
-
 
     # ------------------------------------------
     # Add applications
@@ -1741,41 +1774,24 @@ def admin_export_excel():
         worksheet.append([
 
             application["id"],
-
             application["position"],
-
             application["name"],
-
             application["email"],
-
             application["mobile"],
-
             application["dob"],
-
             application["gender"],
-
             application["qualification"],
-
             application["branch"],
-
             application["graduation_year"],
-
             application["candidate_type"],
-
             application["experience"],
-
             application["skills"],
-
             application["address"],
-
             application["resume_filename"],
-
             application["status"],
-
             application["created_at"]
 
         ])
-
 
     # ------------------------------------------
     # Column widths
@@ -1784,41 +1800,24 @@ def admin_export_excel():
     column_widths = {
 
         "A": 15,
-
         "B": 20,
-
         "C": 25,
-
         "D": 30,
-
         "E": 18,
-
         "F": 15,
-
         "G": 12,
-
         "H": 20,
-
         "I": 25,
-
         "J": 18,
-
         "K": 18,
-
         "L": 15,
-
         "M": 35,
-
         "N": 40,
-
         "O": 30,
-
         "P": 18,
-
         "Q": 22
 
     }
-
 
     for column, width in column_widths.items():
 
@@ -1826,9 +1825,7 @@ def admin_export_excel():
             column
         ].width = width
 
-
     worksheet.freeze_panes = "A2"
-
 
     # ------------------------------------------
     # Save Excel file
@@ -1836,23 +1833,19 @@ def admin_export_excel():
 
     excel_folder = "generated_pdfs"
 
-
     os.makedirs(
         excel_folder,
         exist_ok=True
     )
-
 
     excel_path = os.path.join(
         excel_folder,
         "applications.xlsx"
     )
 
-
     workbook.save(
         excel_path
     )
-
 
     return send_file(
         excel_path,
@@ -1868,11 +1861,7 @@ def admin_export_excel():
 @app.route("/admin-logout")
 def admin_logout():
 
-    session.pop(
-        "admin_logged_in",
-        None
-    )
-
+    session.clear()
 
     return redirect(
         url_for("admin_login")
@@ -1887,7 +1876,6 @@ def admin_logout():
 def logout():
 
     session.clear()
-
 
     return redirect(
         url_for("login")
