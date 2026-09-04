@@ -59,6 +59,13 @@ from email.utils import make_msgid
 # ==================================================
 
 app = Flask(__name__)
+APPLICATION_STATUSES = [
+    "Submitted",
+    "Under Review",
+    "Shortlisted",
+    "Selected",
+    "Rejected",
+]
 
 
 # ==================================================
@@ -2988,50 +2995,90 @@ def admin_login():
 # ADMIN DASHBOARD
 # ==================================================
 
-@app.route(
-    "/admin-dashboard"
-)
+@app.route("/admin-dashboard")
 def admin_dashboard():
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
 
-    if not session.get(
-        "admin_logged_in"
-    ):
-
-        return redirect(
-            url_for(
-                "admin_login"
-            )
-        )
-
-
-    search = request.args.get(
-        "search",
-        ""
-    ).strip()
-
-    status_filter = request.args.get(
-        "status",
-        ""
-    ).strip()
-
+    search = request.args.get("search", "").strip()
+    status_filter = request.args.get("status", "").strip()
 
     connection = get_db_connection()
 
-
     try:
+        total_count = connection.execute(
+            """
+            SELECT COUNT(*) AS count
+            FROM applications
+            """
+        ).fetchone()["count"]
+
+        submitted_count = connection.execute(
+            """
+            SELECT COUNT(*) AS count
+            FROM applications
+            WHERE status = 'Submitted'
+            """
+        ).fetchone()["count"]
+
+        under_review_count = connection.execute(
+            """
+            SELECT COUNT(*) AS count
+            FROM applications
+            WHERE status = 'Under Review'
+            """
+        ).fetchone()["count"]
+
+        shortlisted_count = connection.execute(
+            """
+            SELECT COUNT(*) AS count
+            FROM applications
+            WHERE status = 'Shortlisted'
+            """
+        ).fetchone()["count"]
+
+        selected_count = connection.execute(
+            """
+            SELECT COUNT(*) AS count
+            FROM applications
+            WHERE status = 'Selected'
+            """
+        ).fetchone()["count"]
+
+        rejected_count = connection.execute(
+            """
+            SELECT COUNT(*) AS count
+            FROM applications
+            WHERE status = 'Rejected'
+            """
+        ).fetchone()["count"]
 
         query = """
-            SELECT *
+            SELECT
+                id,
+                position,
+                name,
+                email,
+                mobile,
+                qualification,
+                college_name,
+                university_name,
+                branch,
+                graduation_year,
+                candidate_type,
+                experience,
+                skills,
+                address,
+                resume_filename,
+                status,
+                created_at
             FROM applications
             WHERE 1 = 1
         """
 
-
-        parameters = []
-
+        params = []
 
         if search:
-
             query += """
                 AND (
                     name ILIKE %s
@@ -3042,110 +3089,48 @@ def admin_dashboard():
                     OR college_name ILIKE %s
                     OR university_name ILIKE %s
                     OR branch ILIKE %s
+                    OR skills ILIKE %s
                 )
             """
 
+            search_value = f"%{search}%"
+            params.extend([search_value] * 9)
 
-            search_value = (
-                f"%{search}%"
-            )
+        if status_filter in APPLICATION_STATUSES:
+            query += " AND status = %s"
+            params.append(status_filter)
 
-
-            parameters.extend([
-
-                search_value,
-
-                search_value,
-
-                search_value,
-
-                search_value,
-
-                search_value,
-
-                search_value,
-
-                search_value,
-
-                search_value
-
-            ])
-
-
-        if status_filter:
-
-            query += """
-                AND status = %s
-            """
-
-            parameters.append(
-                status_filter
-            )
-
-
-        query += """
-            ORDER BY id DESC
-        """
-
+        query += " ORDER BY created_at DESC, id DESC"
 
         applications = connection.execute(
             query,
-            tuple(parameters)
+            tuple(params)
         ).fetchall()
 
+    except Exception:
+        app.logger.exception("Admin dashboard error")
 
-        total_count = connection.execute(
-            """
-            SELECT COUNT(*)
-            FROM applications
-            """
-        ).fetchone()[0]
-
-
-        submitted_count = connection.execute(
-            """
-            SELECT COUNT(*)
-            FROM applications
-            WHERE status = 'Submitted'
-            """
-        ).fetchone()[0]
-
-
-        selected_count = connection.execute(
-            """
-            SELECT COUNT(*)
-            FROM applications
-            WHERE status = 'Selected'
-            """
-        ).fetchone()[0]
-
-
-        shortlisted_count = connection.execute(
-            """
-            SELECT COUNT(*)
-            FROM applications
-            WHERE status = 'Shortlisted'
-            """
-        ).fetchone()[0]
-
+        return render_template(
+            "error.html",
+            error="Unable to load admin dashboard."
+        ), 500
 
     finally:
-
         connection.close()
-
 
     return render_template(
         "admin_dashboard.html",
         applications=applications,
         total_count=total_count,
         submitted_count=submitted_count,
-        selected_count=selected_count,
+        under_review_count=under_review_count,
         shortlisted_count=shortlisted_count,
+        selected_count=selected_count,
+        rejected_count=rejected_count,
+        application_statuses=APPLICATION_STATUSES,
         search=search,
-        status_filter=status_filter
+        status_filter=status_filter,
     )
-
-
 # ==================================================
 # ADMIN VIEW APPLICATION
 # ==================================================

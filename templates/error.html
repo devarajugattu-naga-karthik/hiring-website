@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trekso - Error</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div style="text-align:center;">
+                <img
+                    src="{{ url_for('static', filename='images/trekso-logo.png') }}"
+                    alt="Trekso"
+                    style="max-width:180px;margin-bottom:20px;"
+                >
+
+                <h1>Something went wrong</h1>
+
+                <p>{{ message }}</p>
+
+                <a href="/" class="btn">
+                    Go to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
