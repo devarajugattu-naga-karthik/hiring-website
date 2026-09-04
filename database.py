@@ -1,30 +1,111 @@
 import os
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 
 # ==================================================
 # DATABASE CONFIGURATION
 # ==================================================
 
-DATABASE_TYPE = os.environ.get(
-    "DATABASE_TYPE",
-    "sqlite"
-)
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
 # ==================================================
-# SQLITE CONNECTION
+# DATABASE CONNECTION WRAPPER
 # ==================================================
 
-def get_sqlite_connection():
+class DatabaseConnection:
 
-    connection = sqlite3.connect(
-        "hiring.db"
-    )
+    def __init__(self):
 
-    connection.row_factory = sqlite3.Row
+        if not DATABASE_URL:
 
-    return connection
+            raise RuntimeError(
+                "DATABASE_URL environment variable is not configured."
+            )
+
+        self.connection = psycopg2.connect(
+            DATABASE_URL
+        )
+
+
+    def execute(
+        self,
+        query,
+        parameters=None
+    ):
+
+        cursor = self.connection.cursor(
+            cursor_factory=RealDictCursor
+        )
+
+        cursor.execute(
+            query,
+            parameters or ()
+        )
+
+        return DatabaseCursor(
+            self.connection,
+            cursor
+        )
+
+
+    def commit(self):
+
+        self.connection.commit()
+
+
+    def rollback(self):
+
+        self.connection.rollback()
+
+
+    def close(self):
+
+        self.connection.close()
+
+
+# ==================================================
+# CURSOR WRAPPER
+# ==================================================
+
+class DatabaseCursor:
+
+    def __init__(
+        self,
+        connection,
+        cursor
+    ):
+
+        self.connection = connection
+        self.cursor = cursor
+
+
+    def fetchone(self):
+
+        return self.cursor.fetchone()
+
+
+    def fetchall(self):
+
+        return self.cursor.fetchall()
+
+
+    def __getitem__(self, key):
+
+        return self.cursor.fetchone()[key]
+
+
+    def __iter__(self):
+
+        return iter(
+            self.cursor.fetchall()
+        )
+
+
+    def close(self):
+
+        self.cursor.close()
 
 
 # ==================================================
@@ -33,14 +114,7 @@ def get_sqlite_connection():
 
 def get_db_connection():
 
-    if DATABASE_TYPE.lower() == "sqlite":
-
-        return get_sqlite_connection()
-
-    raise RuntimeError(
-        "Unsupported DATABASE_TYPE: "
-        + DATABASE_TYPE
-    )
+    return DatabaseConnection()
 
 
 # ==================================================
@@ -53,14 +127,14 @@ def init_db():
 
 
     # ==================================================
-    # USERS TABLE
+    # USERS
     # ==================================================
 
-    connection.execute(
+    result = connection.execute(
         """
         CREATE TABLE IF NOT EXISTS users (
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id BIGSERIAL PRIMARY KEY,
 
             name TEXT NOT NULL,
 
@@ -78,7 +152,7 @@ def init_db():
 
             mobile_otp TEXT,
 
-            otp_expiry TEXT,
+            otp_expiry TIMESTAMP,
 
             otp_attempts INTEGER DEFAULT 0,
 
@@ -89,21 +163,18 @@ def init_db():
         """
     )
 
+    result.close()
+
 
     # ==================================================
-    # PENDING REGISTRATIONS TABLE
-    #
-    # IMPORTANT:
-    # These are NOT applicant accounts.
-    # They exist only while OTP verification
-    # is pending.
+    # PENDING REGISTRATIONS
     # ==================================================
 
-    connection.execute(
+    result = connection.execute(
         """
         CREATE TABLE IF NOT EXISTS pending_registrations (
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id BIGSERIAL PRIMARY KEY,
 
             name TEXT NOT NULL,
 
@@ -115,7 +186,7 @@ def init_db():
 
             otp TEXT NOT NULL,
 
-            otp_expiry TEXT NOT NULL,
+            otp_expiry TIMESTAMP NOT NULL,
 
             otp_attempts INTEGER DEFAULT 0,
 
@@ -126,18 +197,20 @@ def init_db():
         """
     )
 
+    result.close()
+
 
     # ==================================================
-    # APPLICATIONS TABLE
+    # APPLICATIONS
     # ==================================================
 
-    connection.execute(
+    result = connection.execute(
         """
         CREATE TABLE IF NOT EXISTS applications (
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id BIGSERIAL PRIMARY KEY,
 
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
 
             position TEXT NOT NULL,
 
@@ -177,12 +250,15 @@ def init_db():
             created_at TIMESTAMP
                 DEFAULT CURRENT_TIMESTAMP,
 
-            FOREIGN KEY (user_id)
+            CONSTRAINT fk_applications_user
+                FOREIGN KEY (user_id)
                 REFERENCES users(id)
 
         )
         """
     )
+
+    result.close()
 
 
     connection.commit()
@@ -200,148 +276,142 @@ def upgrade_database():
 
 
     # ==================================================
-    # USERS TABLE
+    # USERS UPGRADES
     # ==================================================
 
-    user_columns = connection.execute(
-        "PRAGMA table_info(users)"
-    ).fetchall()
+    statements = [
 
-    user_column_names = [
-        column["name"]
-        for column in user_columns
+        """
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS email_verified
+        INTEGER DEFAULT 1
+        """,
+
+        """
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS mobile_verified
+        INTEGER DEFAULT 0
+        """,
+
+        """
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS email_otp
+        TEXT
+        """,
+
+        """
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS mobile_otp
+        TEXT
+        """,
+
+        """
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS otp_expiry
+        TIMESTAMP
+        """,
+
+        """
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS otp_attempts
+        INTEGER DEFAULT 0
+        """,
+
+        """
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS created_at
+        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        """
+
     ]
 
 
-    if "email_verified" not in user_column_names:
+    for statement in statements:
 
-        connection.execute(
-            """
-            ALTER TABLE users
-            ADD COLUMN email_verified
-            INTEGER DEFAULT 1
-            """
+        result = connection.execute(
+            statement
         )
 
-
-    if "mobile_verified" not in user_column_names:
-
-        connection.execute(
-            """
-            ALTER TABLE users
-            ADD COLUMN mobile_verified
-            INTEGER DEFAULT 0
-            """
-        )
-
-
-    if "email_otp" not in user_column_names:
-
-        connection.execute(
-            """
-            ALTER TABLE users
-            ADD COLUMN email_otp TEXT
-            """
-        )
-
-
-    if "mobile_otp" not in user_column_names:
-
-        connection.execute(
-            """
-            ALTER TABLE users
-            ADD COLUMN mobile_otp TEXT
-            """
-        )
-
-
-    if "otp_expiry" not in user_column_names:
-
-        connection.execute(
-            """
-            ALTER TABLE users
-            ADD COLUMN otp_expiry TEXT
-            """
-        )
-
-
-    if "otp_attempts" not in user_column_names:
-
-        connection.execute(
-            """
-            ALTER TABLE users
-            ADD COLUMN otp_attempts
-            INTEGER DEFAULT 0
-            """
-        )
-
-
-    if "created_at" not in user_column_names:
-
-        connection.execute(
-            """
-            ALTER TABLE users
-            ADD COLUMN created_at
-            TIMESTAMP
-            """
-        )
+        result.close()
 
 
     # ==================================================
-    # APPLICATIONS TABLE
+    # APPLICATION UPGRADES
     # ==================================================
 
-    application_columns = connection.execute(
-        "PRAGMA table_info(applications)"
-    ).fetchall()
+    application_statements = [
 
-    application_column_names = [
-        column["name"]
-        for column in application_columns
+        """
+        ALTER TABLE applications
+        ADD COLUMN IF NOT EXISTS candidate_type
+        TEXT DEFAULT 'Fresher'
+        """,
+
+        """
+        ALTER TABLE applications
+        ADD COLUMN IF NOT EXISTS experience
+        TEXT
+        """,
+
+        """
+        ALTER TABLE applications
+        ADD COLUMN IF NOT EXISTS college_name
+        TEXT DEFAULT ''
+        """,
+
+        """
+        ALTER TABLE applications
+        ADD COLUMN IF NOT EXISTS university_name
+        TEXT DEFAULT ''
+        """
+
     ]
 
 
-    if "candidate_type" not in application_column_names:
+    for statement in application_statements:
 
-        connection.execute(
-            """
-            ALTER TABLE applications
-            ADD COLUMN candidate_type
-            TEXT DEFAULT 'Fresher'
-            """
+        result = connection.execute(
+            statement
         )
 
-
-    if "experience" not in application_column_names:
-
-        connection.execute(
-            """
-            ALTER TABLE applications
-            ADD COLUMN experience TEXT
-            """
-        )
+        result.close()
 
 
-    if "college_name" not in application_column_names:
+    # ==================================================
+    # INDEXES
+    # ==================================================
 
-        connection.execute(
-            """
-            ALTER TABLE applications
-            ADD COLUMN college_name
-            TEXT DEFAULT ''
-            """
-        )
+    result = connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+        idx_applications_user_id
+        ON applications(user_id)
+        """
+    )
+
+    result.close()
 
 
-    if "university_name" not in application_column_names:
+    result = connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+        idx_applications_email
+        ON applications(email)
+        """
+    )
 
-        connection.execute(
-            """
-            ALTER TABLE applications
-            ADD COLUMN university_name
-            TEXT DEFAULT ''
-            """
-        )
+    result.close()
+
+
+    result = connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS
+        idx_applications_mobile
+        ON applications(mobile)
+        """
+    )
+
+    result.close()
 
 
     connection.commit()
@@ -350,7 +420,7 @@ def upgrade_database():
 
 
 # ==================================================
-# RUN DIRECTLY
+# TEST DATABASE
 # ==================================================
 
 if __name__ == "__main__":
@@ -360,5 +430,5 @@ if __name__ == "__main__":
     upgrade_database()
 
     print(
-        "Database initialized successfully!"
+        "PostgreSQL database initialized successfully!"
     )

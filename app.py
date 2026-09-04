@@ -72,6 +72,8 @@ app.secret_key = os.environ.get(
 
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+# Local development
 app.config["SESSION_COOKIE_SECURE"] = False
 
 app.permanent_session_lifetime = 60 * 60 * 24
@@ -153,13 +155,11 @@ ALLOWED_EXTENSIONS = {
     "docx"
 }
 
-
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 app.config["MAX_CONTENT_LENGTH"] = (
     5 * 1024 * 1024
 )
-
 
 os.makedirs(
     UPLOAD_FOLDER,
@@ -173,7 +173,7 @@ os.makedirs(
 
 
 # ==================================================
-# DATABASE
+# DATABASE INITIALIZATION
 # ==================================================
 
 init_db()
@@ -209,19 +209,16 @@ def send_email(
 ):
 
     if not SMTP_LOGIN:
-
         raise RuntimeError(
             "SMTP_LOGIN is not configured."
         )
 
     if not SMTP_PASSWORD:
-
         raise RuntimeError(
             "SMTP_PASSWORD is not configured."
         )
 
     if not FROM_EMAIL:
-
         raise RuntimeError(
             "FROM_EMAIL is not configured."
         )
@@ -229,37 +226,28 @@ def send_email(
 
     message = EmailMessage()
 
-
     message["Subject"] = subject
-
 
     message["From"] = (
         f"{FROM_NAME} <{FROM_EMAIL}>"
     )
 
-
     message["To"] = recipient_email
 
 
-    # ------------------------------------------------
-    # Plain text
-    # ------------------------------------------------
-
-    message.set_content(
-        body
-    )
+    # Plain-text fallback
+    message.set_content(body)
 
 
-    # ------------------------------------------------
-    # Trekso logo
-    # ------------------------------------------------
+    # ==================================================
+    # TREKSO LOGO
+    # ==================================================
 
     logo_path = os.path.join(
         "static",
         "images",
         "trekso-logo.png"
     )
-
 
     logo_cid = make_msgid(
         domain="trekso"
@@ -268,10 +256,7 @@ def send_email(
 
     safe_body = html.escape(
         body
-    )
-
-
-    safe_body = safe_body.replace(
+    ).replace(
         "\n",
         "<br>"
     )
@@ -279,7 +264,6 @@ def send_email(
 
     html_body = f"""
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
@@ -370,9 +354,9 @@ def send_email(
     )
 
 
-    # ------------------------------------------------
-    # Inline logo
-    # ------------------------------------------------
+    # ==================================================
+    # INLINE LOGO
+    # ==================================================
 
     if os.path.isfile(
         logo_path
@@ -398,9 +382,9 @@ def send_email(
         )
 
 
-    # ------------------------------------------------
-    # PDF attachment
-    # ------------------------------------------------
+    # ==================================================
+    # PDF ATTACHMENT
+    # ==================================================
 
     if attachment_path:
 
@@ -425,9 +409,9 @@ def send_email(
         )
 
 
-    # ------------------------------------------------
-    # Send through Brevo
-    # ------------------------------------------------
+    # ==================================================
+    # SEND THROUGH BREVO
+    # ==================================================
 
     with smtplib.SMTP(
         SMTP_HOST,
@@ -447,7 +431,7 @@ def send_email(
 
 
 # ==================================================
-# SEND OTP
+# SEND OTP EMAIL
 # ==================================================
 
 def send_otp_email(
@@ -581,7 +565,9 @@ def create_application_pdf(
     story.append(
         Paragraph(
             "<b>Application ID:</b> #"
-            + str(application["id"]),
+            + str(
+                application["id"]
+            ),
             normal_style
         )
     )
@@ -598,7 +584,9 @@ def create_application_pdf(
     story.append(
         Paragraph(
             "<b>Application Status:</b> "
-            + str(application["status"]),
+            + str(
+                application["status"]
+            ),
             normal_style
         )
     )
@@ -621,62 +609,86 @@ def create_application_pdf(
 
         [
             "Job Position",
-            str(application["position"])
+            str(
+                application["position"]
+            )
         ],
 
         [
             "Full Name",
-            str(application["name"])
+            str(
+                application["name"]
+            )
         ],
 
         [
             "Email",
-            str(application["email"])
+            str(
+                application["email"]
+            )
         ],
 
         [
             "Mobile Number",
-            str(application["mobile"])
+            str(
+                application["mobile"]
+            )
         ],
 
         [
             "Date of Birth",
-            str(application["dob"])
+            str(
+                application["dob"]
+            )
         ],
 
         [
             "Gender",
-            str(application["gender"])
+            str(
+                application["gender"]
+            )
         ],
 
         [
             "Qualification",
-            str(application["qualification"])
+            str(
+                application["qualification"]
+            )
         ],
 
         [
             "College Name",
-            str(application["college_name"])
+            str(
+                application["college_name"]
+            )
         ],
 
         [
             "University Name",
-            str(application["university_name"])
+            str(
+                application["university_name"]
+            )
         ],
 
         [
             "Branch / Specialization",
-            str(application["branch"])
+            str(
+                application["branch"]
+            )
         ],
 
         [
             "Graduation Year",
-            str(application["graduation_year"])
+            str(
+                application["graduation_year"]
+            )
         ],
 
         [
             "Candidate Type",
-            str(application["candidate_type"])
+            str(
+                application["candidate_type"]
+            )
         ],
 
         [
@@ -689,12 +701,16 @@ def create_application_pdf(
 
         [
             "Technical Skills",
-            str(application["skills"])
+            str(
+                application["skills"]
+            )
         ],
 
         [
             "Address",
-            str(application["address"])
+            str(
+                application["address"]
+            )
         ],
 
         [
@@ -707,7 +723,9 @@ def create_application_pdf(
 
         [
             "Submitted On",
-            str(application["created_at"])
+            str(
+                application["created_at"]
+            )
         ]
 
     ]
@@ -847,7 +865,9 @@ def create_application_pdf(
             (
                 "<b>Walk-in Interview Address:</b> "
                 + html.escape(
-                    str(WALKIN_OFFICE_ADDRESS)
+                    str(
+                        WALKIN_OFFICE_ADDRESS
+                    )
                 )
             ),
             normal_style
@@ -860,7 +880,9 @@ def create_application_pdf(
             (
                 "<b>Interview Date:</b> "
                 + html.escape(
-                    str(WALKIN_DATE)
+                    str(
+                        WALKIN_DATE
+                    )
                 )
             ),
             normal_style
@@ -873,7 +895,9 @@ def create_application_pdf(
             (
                 "<b>Interview Time:</b> "
                 + html.escape(
-                    str(WALKIN_TIME)
+                    str(
+                        WALKIN_TIME
+                    )
                 )
             ),
             normal_style
@@ -886,7 +910,9 @@ def create_application_pdf(
             (
                 "<b>Contact:</b> "
                 + html.escape(
-                    str(WALKIN_CONTACT)
+                    str(
+                        WALKIN_CONTACT
+                    )
                 )
             ),
             normal_style
@@ -904,7 +930,10 @@ def create_application_pdf(
 
     story.append(
         Paragraph(
-            "This document was generated electronically by Trekso Careers.",
+            (
+                "This document was generated "
+                "electronically by Trekso Careers."
+            ),
             footer_style
         )
     )
@@ -1003,14 +1032,16 @@ Trekso Careers
         attachment_path=pdf_path,
         attachment_name=(
             "Trekso_Application_"
-            + str(application["id"])
+            + str(
+                application["id"]
+            )
             + ".pdf"
         )
     )
 
 
 # ==================================================
-# HOME
+# HOME PAGE
 # ==================================================
 
 @app.route("/")
@@ -1022,10 +1053,9 @@ def home():
 
 
 # ==================================================
-# REGISTRATION
+# APPLICANT REGISTRATION
 #
-# IMPORTANT:
-# NO user is created here.
+# No user account is created here.
 # Only pending_registrations is created.
 # ==================================================
 
@@ -1073,167 +1103,145 @@ def register():
         connection = get_db_connection()
 
 
-        # ------------------------------------------
-        # Check already registered email
-        # ------------------------------------------
+        try:
 
-        existing_user = connection.execute(
-            """
-            SELECT id
-            FROM users
-            WHERE LOWER(email) = LOWER(?)
-            """,
-            (
-                email,
-            )
-        ).fetchone()
+            # --------------------------------------
+            # Already registered email
+            # --------------------------------------
 
-
-        if existing_user:
-
-            connection.close()
-
-            return render_template(
-                "register.html",
-                error=(
-                    "Email already registered. "
-                    "Please login."
-                )
-            )
-
-
-        # ------------------------------------------
-        # Check already registered mobile
-        # ------------------------------------------
-
-        existing_mobile_user = connection.execute(
-            """
-            SELECT id
-            FROM users
-            WHERE mobile = ?
-            """,
-            (
-                mobile,
-            )
-        ).fetchone()
-
-
-        if existing_mobile_user:
-
-            connection.close()
-
-            return render_template(
-                "register.html",
-                error=(
-                    "Mobile number already registered."
-                )
-            )
-
-
-        # ------------------------------------------
-        # Existing pending email
-        #
-        # Delete old unfinished verification so
-        # applicant can request a fresh OTP.
-        # ------------------------------------------
-
-        pending_email = connection.execute(
-            """
-            SELECT id
-            FROM pending_registrations
-            WHERE LOWER(email) = LOWER(?)
-            """,
-            (
-                email,
-            )
-        ).fetchone()
-
-
-        if pending_email:
-
-            connection.execute(
+            existing_user = connection.execute(
                 """
-                DELETE FROM pending_registrations
-                WHERE LOWER(email) = LOWER(?)
+                SELECT id
+                FROM users
+                WHERE LOWER(email) = LOWER(%s)
                 """,
                 (
                     email,
                 )
-            )
+            ).fetchone()
 
 
-        # ------------------------------------------
-        # Pending mobile with another email
-        # ------------------------------------------
+            if existing_user:
 
-        pending_mobile = connection.execute(
-            """
-            SELECT email
-            FROM pending_registrations
-            WHERE mobile = ?
-            """,
-            (
-                mobile,
-            )
-        ).fetchone()
+                return render_template(
+                    "register.html",
+                    error=(
+                        "Email already registered. "
+                        "Please login."
+                    )
+                )
 
 
-        if pending_mobile:
+            # --------------------------------------
+            # Already registered mobile
+            # --------------------------------------
 
-            connection.close()
+            existing_mobile_user = connection.execute(
+                """
+                SELECT id
+                FROM users
+                WHERE mobile = %s
+                """,
+                (
+                    mobile,
+                )
+            ).fetchone()
 
-            return render_template(
-                "register.html",
-                error=(
-                    "This mobile number is already "
-                    "under verification."
+
+            if existing_mobile_user:
+
+                return render_template(
+                    "register.html",
+                    error=(
+                        "Mobile number already registered."
+                    )
+                )
+
+
+            # --------------------------------------
+            # Remove previous pending registration
+            # for same email
+            # --------------------------------------
+
+            connection.execute(
+                """
+                DELETE FROM pending_registrations
+                WHERE LOWER(email) = LOWER(%s)
+                """,
+                (
+                    email,
+                )
+            ).close()
+
+
+            # --------------------------------------
+            # Check pending mobile
+            # --------------------------------------
+
+            pending_mobile = connection.execute(
+                """
+                SELECT email
+                FROM pending_registrations
+                WHERE mobile = %s
+                """,
+                (
+                    mobile,
+                )
+            ).fetchone()
+
+
+            if pending_mobile:
+
+                return render_template(
+                    "register.html",
+                    error=(
+                        "This mobile number is already "
+                        "under verification."
+                    )
+                )
+
+
+            # --------------------------------------
+            # Generate OTP
+            # --------------------------------------
+
+            otp = str(
+                random.randint(
+                    100000,
+                    999999
                 )
             )
 
 
-        # ------------------------------------------
-        # Generate OTP
-        # ------------------------------------------
-
-        otp = str(
-            random.randint(
-                100000,
-                999999
+            otp_expiry = (
+                datetime.now(
+                    timezone.utc
+                )
+                + timedelta(
+                    minutes=10
+                )
             )
-        )
 
 
-        otp_expiry = (
-            datetime.now(
-                timezone.utc
+            # --------------------------------------
+            # Hash password
+            # --------------------------------------
+
+            password_hash = (
+                generate_password_hash(
+                    password
+                )
             )
-            + timedelta(
-                minutes=10
-            )
-        ).isoformat()
 
 
-        # ------------------------------------------
-        # Hash password
-        #
-        # IMPORTANT:
-        # Plain password is never stored.
-        # ------------------------------------------
-
-        password_hash = generate_password_hash(
-            password
-        )
-
-
-        # ------------------------------------------
-        # Save pending registration ONLY
-        # ------------------------------------------
-
-        try:
+            # --------------------------------------
+            # Save pending registration
+            # --------------------------------------
 
             connection.execute(
                 """
                 INSERT INTO pending_registrations (
+
                     name,
                     email,
                     mobile,
@@ -1241,8 +1249,17 @@ def register():
                     otp,
                     otp_expiry,
                     otp_attempts
+
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
                 """,
                 (
                     name,
@@ -1253,7 +1270,7 @@ def register():
                     otp_expiry,
                     0
                 )
-            )
+            ).close()
 
 
             connection.commit()
@@ -1262,12 +1279,13 @@ def register():
         except Exception:
 
             connection.rollback()
-            connection.close()
 
             raise
 
 
-        connection.close()
+        finally:
+
+            connection.close()
 
 
         # ------------------------------------------
@@ -1281,7 +1299,6 @@ def register():
                 otp
             )
 
-
         except Exception as error:
 
             print(
@@ -1293,40 +1310,41 @@ def register():
             connection = get_db_connection()
 
 
-            connection.execute(
-                """
-                DELETE FROM pending_registrations
-                WHERE LOWER(email) = LOWER(?)
-                """,
-                (
-                    email,
-                )
-            )
+            try:
+
+                connection.execute(
+                    """
+                    DELETE FROM pending_registrations
+                    WHERE LOWER(email) = LOWER(%s)
+                    """,
+                    (
+                        email,
+                    )
+                ).close()
 
 
-            connection.commit()
-            connection.close()
+                connection.commit()
+
+            finally:
+
+                connection.close()
 
 
             return render_template(
                 "register.html",
                 error=(
                     "Unable to send verification email. "
-                    "Please check the email configuration "
+                    "Please check the Brevo configuration "
                     "and try again."
                 )
             )
 
 
-        # ------------------------------------------
-        # Store pending email only in session
-        # ------------------------------------------
-
         session.clear()
 
-        session["pending_registration_email"] = (
-            email
-        )
+        session[
+            "pending_registration_email"
+        ] = email
 
 
         return redirect(
@@ -1344,7 +1362,7 @@ def register():
 # ==================================================
 # VERIFY EMAIL OTP
 #
-# ONLY HERE IS THE ACTUAL USER ACCOUNT CREATED.
+# ACTUAL USER ACCOUNT IS CREATED ONLY HERE.
 # ==================================================
 
 @app.route(
@@ -1370,242 +1388,213 @@ def verify_email():
     connection = get_db_connection()
 
 
-    pending = connection.execute(
-        """
-        SELECT *
-        FROM pending_registrations
-        WHERE LOWER(email) = LOWER(?)
-        """,
-        (
-            email,
-        )
-    ).fetchone()
+    try:
 
-
-    if not pending:
-
-        connection.close()
-
-        session.pop(
-            "pending_registration_email",
-            None
-        )
-
-        return render_template(
-            "register.html",
-            error=(
-                "Registration session expired. "
-                "Please register again."
-            )
-        )
-
-
-    if request.method == "POST":
-
-        entered_otp = request.form.get(
-            "otp",
-            ""
-        ).strip()
-
-
-        if not entered_otp:
-
-            connection.close()
-
-            return render_template(
-                "verify_email.html",
-                error="Please enter the OTP."
-            )
-
-
-        # ------------------------------------------
-        # Maximum attempts
-        # ------------------------------------------
-
-        attempts = (
-            pending["otp_attempts"]
-            or 0
-        )
-
-
-        if attempts >= 5:
-
-            connection.close()
-
-            return render_template(
-                "verify_email.html",
-                error=(
-                    "Too many incorrect OTP attempts. "
-                    "Please register again."
-                )
-            )
-
-
-        # ------------------------------------------
-        # OTP expiry
-        # ------------------------------------------
-
-        try:
-
-            expiry = datetime.fromisoformat(
-                pending["otp_expiry"]
-            )
-
-        except (
-            TypeError,
-            ValueError
-        ):
-
-            connection.close()
-
-            return render_template(
-                "verify_email.html",
-                error=(
-                    "Invalid OTP session. "
-                    "Please register again."
-                )
-            )
-
-
-        if expiry.tzinfo is None:
-
-            expiry = expiry.replace(
-                tzinfo=timezone.utc
-            )
-
-
-        if datetime.now(
-            timezone.utc
-        ) > expiry:
-
-            connection.close()
-
-            return render_template(
-                "verify_email.html",
-                error=(
-                    "OTP expired. "
-                    "Please register again."
-                )
-            )
-
-
-        # ------------------------------------------
-        # OTP check
-        # ------------------------------------------
-
-        if entered_otp != str(
-            pending["otp"]
-        ):
-
-            attempts += 1
-
-
-            connection.execute(
-                """
-                UPDATE pending_registrations
-                SET otp_attempts = ?
-                WHERE id = ?
-                """,
-                (
-                    attempts,
-                    pending["id"]
-                )
-            )
-
-
-            connection.commit()
-            connection.close()
-
-
-            remaining = 5 - attempts
-
-
-            return render_template(
-                "verify_email.html",
-                error=(
-                    "Incorrect OTP. "
-                    + str(remaining)
-                    + " attempt(s) remaining."
-                )
-            )
-
-
-        # ------------------------------------------
-        # FINAL DUPLICATE CHECK
-        # ------------------------------------------
-
-        existing_user = connection.execute(
+        pending = connection.execute(
             """
-            SELECT id
-            FROM users
-            WHERE LOWER(email) = LOWER(?)
+            SELECT *
+            FROM pending_registrations
+            WHERE LOWER(email) = LOWER(%s)
             """,
             (
-                pending["email"],
+                email,
             )
         ).fetchone()
 
 
-        if existing_user:
-
-            connection.close()
-
-            session.pop(
-                "pending_registration_email",
-                None
-            )
-
-            return render_template(
-                "login.html",
-                error=(
-                    "This email is already registered. "
-                    "Please login."
-                )
-            )
-
-
-        existing_mobile = connection.execute(
-            """
-            SELECT id
-            FROM users
-            WHERE mobile = ?
-            """,
-            (
-                pending["mobile"],
-            )
-        ).fetchone()
-
-
-        if existing_mobile:
-
-            connection.close()
+        if not pending:
 
             return render_template(
                 "register.html",
                 error=(
-                    "This mobile number is already "
-                    "registered."
+                    "Registration session expired. "
+                    "Please register again."
                 )
             )
 
 
-        # ------------------------------------------
-        # CREATE ACTUAL USER
-        # ------------------------------------------
+        if request.method == "POST":
 
-        try:
+            entered_otp = request.form.get(
+                "otp",
+                ""
+            ).strip()
+
+
+            if not entered_otp:
+
+                return render_template(
+                    "verify_email.html",
+                    error="Please enter the OTP."
+                )
+
+
+            attempts = (
+                pending["otp_attempts"]
+                or 0
+            )
+
+
+            # --------------------------------------
+            # Maximum attempts
+            # --------------------------------------
+
+            if attempts >= 5:
+
+                return render_template(
+                    "verify_email.html",
+                    error=(
+                        "Too many incorrect OTP attempts. "
+                        "Please register again."
+                    )
+                )
+
+
+            # --------------------------------------
+            # OTP expiry
+            # --------------------------------------
+
+            expiry = pending["otp_expiry"]
+
+
+            if expiry.tzinfo is None:
+
+                expiry = expiry.replace(
+                    tzinfo=timezone.utc
+                )
+
+
+            if datetime.now(
+                timezone.utc
+            ) > expiry:
+
+                return render_template(
+                    "verify_email.html",
+                    error=(
+                        "OTP expired. "
+                        "Please register again."
+                    )
+                )
+
+
+            # --------------------------------------
+            # OTP comparison
+            # --------------------------------------
+
+            if entered_otp != str(
+                pending["otp"]
+            ):
+
+                attempts += 1
+
+
+                connection.execute(
+                    """
+                    UPDATE pending_registrations
+                    SET otp_attempts = %s
+                    WHERE id = %s
+                    """,
+                    (
+                        attempts,
+                        pending["id"]
+                    )
+                ).close()
+
+
+                connection.commit()
+
+
+                remaining = 5 - attempts
+
+
+                return render_template(
+                    "verify_email.html",
+                    error=(
+                        "Incorrect OTP. "
+                        + str(remaining)
+                        + " attempt(s) remaining."
+                    )
+                )
+
+
+            # --------------------------------------
+            # Final duplicate email check
+            # --------------------------------------
+
+            existing_user = connection.execute(
+                """
+                SELECT id
+                FROM users
+                WHERE LOWER(email) = LOWER(%s)
+                """,
+                (
+                    pending["email"],
+                )
+            ).fetchone()
+
+
+            if existing_user:
+
+                return render_template(
+                    "login.html",
+                    error=(
+                        "This email is already registered. "
+                        "Please login."
+                    )
+                )
+
+
+            # --------------------------------------
+            # Final duplicate mobile check
+            # --------------------------------------
+
+            existing_mobile = connection.execute(
+                """
+                SELECT id
+                FROM users
+                WHERE mobile = %s
+                """,
+                (
+                    pending["mobile"],
+                )
+            ).fetchone()
+
+
+            if existing_mobile:
+
+                return render_template(
+                    "register.html",
+                    error=(
+                        "This mobile number is already "
+                        "registered."
+                    )
+                )
+
+
+            # --------------------------------------
+            # Create actual verified account
+            # --------------------------------------
 
             connection.execute(
                 """
                 INSERT INTO users (
+
                     name,
                     email,
                     mobile,
                     password,
                     email_verified,
                     mobile_verified
+
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
                 """,
                 (
                     pending["name"],
@@ -1615,56 +1604,51 @@ def verify_email():
                     1,
                     0
                 )
-            )
+            ).close()
 
+
+            # --------------------------------------
+            # Delete pending registration
+            # --------------------------------------
 
             connection.execute(
                 """
                 DELETE FROM pending_registrations
-                WHERE id = ?
+                WHERE id = %s
                 """,
                 (
                     pending["id"],
                 )
-            )
+            ).close()
 
 
             connection.commit()
 
 
-        except Exception:
-
-            connection.rollback()
-            connection.close()
-
-            raise
+            session.pop(
+                "pending_registration_email",
+                None
+            )
 
 
-        connection.close()
-
-
-        session.pop(
-            "pending_registration_email",
-            None
-        )
+            return render_template(
+                "login.html",
+                success=(
+                    "Email verified successfully. "
+                    "Your Trekso account has been created. "
+                    "You can now login."
+                )
+            )
 
 
         return render_template(
-            "login.html",
-            success=(
-                "Email verified successfully. "
-                "Your Trekso account has been created. "
-                "You can now login."
-            )
+            "verify_email.html"
         )
 
 
-    connection.close()
+    finally:
 
-
-    return render_template(
-        "verify_email.html"
-    )
+        connection.close()
 
 
 # ==================================================
@@ -1693,19 +1677,22 @@ def login():
         connection = get_db_connection()
 
 
-        user = connection.execute(
-            """
-            SELECT *
-            FROM users
-            WHERE LOWER(email) = LOWER(?)
-            """,
-            (
-                email,
-            )
-        ).fetchone()
+        try:
 
+            user = connection.execute(
+                """
+                SELECT *
+                FROM users
+                WHERE LOWER(email) = LOWER(%s)
+                """,
+                (
+                    email,
+                )
+            ).fetchone()
 
-        connection.close()
+        finally:
+
+            connection.close()
 
 
         if user and check_password_hash(
@@ -1784,20 +1771,23 @@ def applicant_home():
     connection = get_db_connection()
 
 
-    application = connection.execute(
-        """
-        SELECT *
-        FROM applications
-        WHERE user_id = ?
-        LIMIT 1
-        """,
-        (
-            session["user_id"],
-        )
-    ).fetchone()
+    try:
 
+        application = connection.execute(
+            """
+            SELECT *
+            FROM applications
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (
+                session["user_id"],
+            )
+        ).fetchone()
 
-    connection.close()
+    finally:
+
+        connection.close()
 
 
     return render_template(
@@ -1829,61 +1819,80 @@ def apply():
     connection = get_db_connection()
 
 
-    user = connection.execute(
-        """
-        SELECT *
-        FROM users
-        WHERE id = ?
-        """,
-        (
-            session["user_id"],
-        )
-    ).fetchone()
+    try:
+
+        # ------------------------------------------
+        # Current user
+        # ------------------------------------------
+
+        user = connection.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE id = %s
+            """,
+            (
+                session["user_id"],
+            )
+        ).fetchone()
 
 
-    if not user:
+        if not user:
+
+            session.clear()
+
+            return redirect(
+                url_for(
+                    "login"
+                )
+            )
+
+
+        # ------------------------------------------
+        # Verified email required
+        # ------------------------------------------
+
+        if user["email_verified"] != 1:
+
+            return render_template(
+                "login.html",
+                error=(
+                    "Please verify your email "
+                    "before applying."
+                )
+            )
+
+
+        # ------------------------------------------
+        # Existing application
+        # ------------------------------------------
+
+        existing_application = connection.execute(
+            """
+            SELECT id, position
+            FROM applications
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (
+                session["user_id"],
+            )
+        ).fetchone()
+
+
+    finally:
 
         connection.close()
-
-        session.clear()
-
-        return redirect(
-            url_for(
-                "login"
-            )
-        )
-
-
-    if user["email_verified"] != 1:
-
-        connection.close()
-
-        return render_template(
-            "login.html",
-            error=(
-                "Please verify your email "
-                "before applying."
-            )
-        )
-
-
-    existing_application = connection.execute(
-        """
-        SELECT id, position
-        FROM applications
-        WHERE user_id = ?
-        LIMIT 1
-        """,
-        (
-            session["user_id"],
-        )
-    ).fetchone()
-
-
-    connection.close()
 
 
     if existing_application:
+
+        safe_position = html.escape(
+            str(
+                existing_application["position"]
+            )
+        )
+
 
         return f"""
         <!DOCTYPE html>
@@ -1919,6 +1928,12 @@ def apply():
 
                 h2 {{
                     color:#ff4b00;
+                    margin-bottom:20px;
+                }}
+
+                p {{
+                    color:#555;
+                    margin-bottom:15px;
                 }}
 
                 a {{
@@ -1948,11 +1963,7 @@ def apply():
 
                 <p>
                     <strong>
-                        {html.escape(
-                            str(
-                                existing_application["position"]
-                            )
-                        )}
+                        {safe_position}
                     </strong>
                 </p>
 
@@ -2112,335 +2123,286 @@ def apply():
         connection = get_db_connection()
 
 
-        # ------------------------------------------
-        # Re-check verified account
-        # ------------------------------------------
-
-        user = connection.execute(
-            """
-            SELECT *
-            FROM users
-            WHERE id = ?
-            """,
-            (
-                session["user_id"],
-            )
-        ).fetchone()
-
-
-        if not user:
-
-            connection.close()
-
-            session.clear()
-
-            return redirect(
-                url_for(
-                    "login"
-                )
-            )
-
-
-        if user["email_verified"] != 1:
-
-            connection.close()
-
-            return render_template(
-                "login.html",
-                error=(
-                    "Please verify your email before applying."
-                )
-            )
-
-
-        # ------------------------------------------
-        # One application per account
-        # ------------------------------------------
-
-        existing_application = connection.execute(
-            """
-            SELECT id
-            FROM applications
-            WHERE user_id = ?
-            LIMIT 1
-            """,
-            (
-                session["user_id"],
-            )
-        ).fetchone()
-
-
-        if existing_application:
-
-            connection.close()
-
-            return redirect(
-                url_for(
-                    "my_application"
-                )
-            )
-
-
-        # ------------------------------------------
-        # Email already used
-        # ------------------------------------------
-
-        existing_email_application = connection.execute(
-            """
-            SELECT id
-            FROM applications
-            WHERE LOWER(email) = LOWER(?)
-            LIMIT 1
-            """,
-            (
-                email,
-            )
-        ).fetchone()
-
-
-        if existing_email_application:
-
-            connection.close()
-
-            return render_template(
-                "apply.html",
-                error=(
-                    "This email has already been used "
-                    "to submit an application."
-                )
-            )
-
-
-        # ------------------------------------------
-        # Mobile already used
-        # ------------------------------------------
-
-        existing_mobile_application = connection.execute(
-            """
-            SELECT id
-            FROM applications
-            WHERE mobile = ?
-            LIMIT 1
-            """,
-            (
-                mobile,
-            )
-        ).fetchone()
-
-
-        if existing_mobile_application:
-
-            connection.close()
-
-            return render_template(
-                "apply.html",
-                error=(
-                    "This mobile number has already "
-                    "been used to submit an application."
-                )
-            )
-
-
-        # ------------------------------------------
-        # Resume upload
-        # ------------------------------------------
-
-        resume = request.files.get(
-            "resume"
-        )
-
-        resume_filename = None
-
-
-        if resume and resume.filename:
-
-            if not allowed_file(
-                resume.filename
-            ):
-
-                connection.close()
-
-                return render_template(
-                    "apply.html",
-                    error=(
-                        "Invalid resume format. "
-                        "Only PDF, DOC and DOCX files "
-                        "are allowed."
-                    )
-                )
-
-
-            original_filename = secure_filename(
-                resume.filename
-            )
-
-
-            if not original_filename:
-
-                connection.close()
-
-                return render_template(
-                    "apply.html",
-                    error=(
-                        "Invalid resume filename."
-                    )
-                )
-
-
-            base_name, extension = os.path.splitext(
-                original_filename
-            )
-
-
-            resume_filename = (
-                f"{session['user_id']}_"
-                f"{base_name}"
-                f"{extension}"
-            )
-
-
-            resume_path = os.path.join(
-                app.config["UPLOAD_FOLDER"],
-                resume_filename
-            )
-
-
-            resume.save(
-                resume_path
-            )
-
-
-        # ------------------------------------------
-        # Save application
-        # ------------------------------------------
-
         try:
 
-            connection.execute(
+            # --------------------------------------
+            # Verify user
+            # --------------------------------------
+
+            user = connection.execute(
+                """
+                SELECT *
+                FROM users
+                WHERE id = %s
+                """,
+                (
+                    session["user_id"],
+                )
+            ).fetchone()
+
+
+            if not user:
+
+                session.clear()
+
+                return redirect(
+                    url_for(
+                        "login"
+                    )
+                )
+
+
+            if user["email_verified"] != 1:
+
+                return render_template(
+                    "login.html",
+                    error=(
+                        "Please verify your email "
+                        "before applying."
+                    )
+                )
+
+
+            # --------------------------------------
+            # One application per account
+            # --------------------------------------
+
+            existing_application = connection.execute(
+                """
+                SELECT id
+                FROM applications
+                WHERE user_id = %s
+                LIMIT 1
+                """,
+                (
+                    session["user_id"],
+                )
+            ).fetchone()
+
+
+            if existing_application:
+
+                return redirect(
+                    url_for(
+                        "my_application"
+                    )
+                )
+
+
+            # --------------------------------------
+            # Email already used
+            # --------------------------------------
+
+            existing_email_application = connection.execute(
+                """
+                SELECT id
+                FROM applications
+                WHERE LOWER(email) = LOWER(%s)
+                LIMIT 1
+                """,
+                (
+                    email,
+                )
+            ).fetchone()
+
+
+            if existing_email_application:
+
+                return render_template(
+                    "apply.html",
+                    error=(
+                        "This email has already been used "
+                        "to submit an application."
+                    )
+                )
+
+
+            # --------------------------------------
+            # Mobile already used
+            # --------------------------------------
+
+            existing_mobile_application = connection.execute(
+                """
+                SELECT id
+                FROM applications
+                WHERE mobile = %s
+                LIMIT 1
+                """,
+                (
+                    mobile,
+                )
+            ).fetchone()
+
+
+            if existing_mobile_application:
+
+                return render_template(
+                    "apply.html",
+                    error=(
+                        "This mobile number has already "
+                        "been used to submit an application."
+                    )
+                )
+
+
+            # --------------------------------------
+            # Resume
+            # --------------------------------------
+
+            resume = request.files.get(
+                "resume"
+            )
+
+            resume_filename = None
+
+
+            if resume and resume.filename:
+
+                if not allowed_file(
+                    resume.filename
+                ):
+
+                    return render_template(
+                        "apply.html",
+                        error=(
+                            "Invalid resume format. "
+                            "Only PDF, DOC and DOCX files "
+                            "are allowed."
+                        )
+                    )
+
+
+                original_filename = secure_filename(
+                    resume.filename
+                )
+
+
+                if not original_filename:
+
+                    return render_template(
+                        "apply.html",
+                        error=(
+                            "Invalid resume filename."
+                        )
+                    )
+
+
+                base_name, extension = os.path.splitext(
+                    original_filename
+                )
+
+
+                resume_filename = (
+                    f"{session['user_id']}_"
+                    f"{base_name}"
+                    f"{extension}"
+                )
+
+
+                resume_path = os.path.join(
+                    app.config["UPLOAD_FOLDER"],
+                    resume_filename
+                )
+
+
+                resume.save(
+                    resume_path
+                )
+
+
+            # --------------------------------------
+            # Insert application
+            #
+            # PostgreSQL RETURNING is used instead
+            # of SQLite last_insert_rowid().
+            # --------------------------------------
+
+            result = connection.execute(
                 """
                 INSERT INTO applications (
 
                     user_id,
-
                     position,
-
                     name,
-
                     email,
-
                     mobile,
-
                     dob,
-
                     gender,
-
                     qualification,
-
                     college_name,
-
                     university_name,
-
                     branch,
-
                     graduation_year,
-
                     candidate_type,
-
                     experience,
-
                     skills,
-
                     address,
-
                     resume_filename
 
                 )
-
                 VALUES (
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?,
-                    ?
+
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
+
                 )
+
+                RETURNING id
                 """,
                 (
-
                     session["user_id"],
-
                     position,
-
                     name,
-
                     email,
-
                     mobile,
-
                     dob,
-
                     gender,
-
                     qualification,
-
                     college_name,
-
                     university_name,
-
                     branch,
-
                     graduation_year,
-
                     candidate_type,
-
                     experience,
-
                     skills,
-
                     address,
-
                     resume_filename
-
                 )
             )
+
+
+            inserted_row = result.fetchone()
+
+            result.close()
+
+
+            application_id = inserted_row[
+                "id"
+            ]
 
 
             connection.commit()
 
 
-            application_id = connection.execute(
-                """
-                SELECT last_insert_rowid()
-                """
-            ).fetchone()[0]
-
-
-            application = connection.execute(
-                """
-                SELECT *
-                FROM applications
-                WHERE id = ?
-                """,
-                (
-                    application_id,
-                )
-            ).fetchone()
-
-
         except Exception:
 
             connection.rollback()
+
             connection.close()
 
 
@@ -2470,11 +2432,41 @@ def apply():
             raise
 
 
-        connection.close()
+        finally:
+
+            try:
+                connection.close()
+            except Exception:
+                pass
 
 
         # ------------------------------------------
-        # Create application PDF
+        # Get saved application
+        # ------------------------------------------
+
+        connection = get_db_connection()
+
+
+        try:
+
+            application = connection.execute(
+                """
+                SELECT *
+                FROM applications
+                WHERE id = %s
+                """,
+                (
+                    application_id,
+                )
+            ).fetchone()
+
+        finally:
+
+            connection.close()
+
+
+        # ------------------------------------------
+        # Create PDF
         # ------------------------------------------
 
         pdf_path = create_application_pdf(
@@ -2483,7 +2475,7 @@ def apply():
 
 
         # ------------------------------------------
-        # Send success email
+        # Send confirmation email
         # ------------------------------------------
 
         email_sent = True
@@ -2496,7 +2488,6 @@ def apply():
                 pdf_path
             )
 
-
         except Exception as error:
 
             email_sent = False
@@ -2506,10 +2497,6 @@ def apply():
                 error
             )
 
-
-        # ------------------------------------------
-        # Email message
-        # ------------------------------------------
 
         if email_sent:
 
@@ -2538,24 +2525,33 @@ def apply():
         # ------------------------------------------
 
         safe_name = html.escape(
-            str(application["name"])
+            str(
+                application["name"]
+            )
         )
 
-
         safe_address = html.escape(
-            str(WALKIN_OFFICE_ADDRESS)
+            str(
+                WALKIN_OFFICE_ADDRESS
+            )
         )
 
         safe_date = html.escape(
-            str(WALKIN_DATE)
+            str(
+                WALKIN_DATE
+            )
         )
 
         safe_time = html.escape(
-            str(WALKIN_TIME)
+            str(
+                WALKIN_TIME
+            )
         )
 
         safe_contact = html.escape(
-            str(WALKIN_CONTACT)
+            str(
+                WALKIN_CONTACT
+            )
         )
 
 
@@ -2593,10 +2589,12 @@ def apply():
 
                 h2 {{
                     color:#ff4b00;
+                    margin-bottom:20px;
                 }}
 
                 p {{
                     color:#555;
+                    margin-bottom:16px;
                     line-height:1.6;
                 }}
 
@@ -2617,6 +2615,7 @@ def apply():
 
                 .walkin h3 {{
                     color:#ff4b00;
+                    margin-top:0;
                 }}
 
                 a {{
@@ -2664,25 +2663,33 @@ def apply():
                     </h3>
 
                     <p>
-                        <strong>Office Address:</strong>
+                        <strong>
+                            Office Address:
+                        </strong>
                         <br>
                         {safe_address}
                     </p>
 
                     <p>
-                        <strong>Date:</strong>
+                        <strong>
+                            Date:
+                        </strong>
                         <br>
                         {safe_date}
                     </p>
 
                     <p>
-                        <strong>Time:</strong>
+                        <strong>
+                            Time:
+                        </strong>
                         <br>
                         {safe_time}
                     </p>
 
                     <p>
-                        <strong>Contact:</strong>
+                        <strong>
+                            Contact:
+                        </strong>
                         <br>
                         {safe_contact}
                     </p>
@@ -2732,20 +2739,23 @@ def my_application():
     connection = get_db_connection()
 
 
-    application = connection.execute(
-        """
-        SELECT *
-        FROM applications
-        WHERE user_id = ?
-        LIMIT 1
-        """,
-        (
-            session["user_id"],
-        )
-    ).fetchone()
+    try:
 
+        application = connection.execute(
+            """
+            SELECT *
+            FROM applications
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (
+                session["user_id"],
+            )
+        ).fetchone()
 
-    connection.close()
+    finally:
+
+        connection.close()
 
 
     return render_template(
@@ -2777,21 +2787,24 @@ def download_resume(
     connection = get_db_connection()
 
 
-    application = connection.execute(
-        """
-        SELECT *
-        FROM applications
-        WHERE id = ?
-        AND user_id = ?
-        """,
-        (
-            application_id,
-            session["user_id"]
-        )
-    ).fetchone()
+    try:
 
+        application = connection.execute(
+            """
+            SELECT *
+            FROM applications
+            WHERE id = %s
+            AND user_id = %s
+            """,
+            (
+                application_id,
+                session["user_id"]
+            )
+        ).fetchone()
 
-    connection.close()
+    finally:
+
+        connection.close()
 
 
     if not application:
@@ -2802,9 +2815,9 @@ def download_resume(
         )
 
 
-    resume_filename = application[
-        "resume_filename"
-    ]
+    resume_filename = (
+        application["resume_filename"]
+    )
 
 
     if not resume_filename:
@@ -2859,20 +2872,23 @@ def download_application():
     connection = get_db_connection()
 
 
-    application = connection.execute(
-        """
-        SELECT *
-        FROM applications
-        WHERE user_id = ?
-        LIMIT 1
-        """,
-        (
-            session["user_id"],
-        )
-    ).fetchone()
+    try:
 
+        application = connection.execute(
+            """
+            SELECT *
+            FROM applications
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (
+                session["user_id"],
+            )
+        ).fetchone()
 
-    connection.close()
+    finally:
+
+        connection.close()
 
 
     if not application:
@@ -2913,7 +2929,6 @@ def admin_login():
         "ADMIN_USERNAME",
         "admin"
     )
-
 
     ADMIN_PASSWORD = os.environ.get(
         "ADMIN_PASSWORD",
@@ -2994,7 +3009,6 @@ def admin_dashboard():
         ""
     ).strip()
 
-
     status_filter = request.args.get(
         "status",
         ""
@@ -3004,117 +3018,120 @@ def admin_dashboard():
     connection = get_db_connection()
 
 
-    query = """
-        SELECT *
-        FROM applications
-        WHERE 1 = 1
-    """
+    try:
+
+        query = """
+            SELECT *
+            FROM applications
+            WHERE 1 = 1
+        """
 
 
-    parameters = []
+        parameters = []
 
 
-    if search:
+        if search:
 
-        query += """
-            AND (
-                name LIKE ?
-                OR email LIKE ?
-                OR mobile LIKE ?
-                OR position LIKE ?
-                OR qualification LIKE ?
-                OR college_name LIKE ?
-                OR university_name LIKE ?
-                OR branch LIKE ?
+            query += """
+                AND (
+                    name ILIKE %s
+                    OR email ILIKE %s
+                    OR mobile ILIKE %s
+                    OR position ILIKE %s
+                    OR qualification ILIKE %s
+                    OR college_name ILIKE %s
+                    OR university_name ILIKE %s
+                    OR branch ILIKE %s
+                )
+            """
+
+
+            search_value = (
+                f"%{search}%"
             )
-        """
 
 
-        search_value = (
-            f"%{search}%"
-        )
+            parameters.extend([
+
+                search_value,
+
+                search_value,
+
+                search_value,
+
+                search_value,
+
+                search_value,
+
+                search_value,
+
+                search_value,
+
+                search_value
+
+            ])
 
 
-        parameters.extend([
+        if status_filter:
 
-            search_value,
+            query += """
+                AND status = %s
+            """
 
-            search_value,
+            parameters.append(
+                status_filter
+            )
 
-            search_value,
-
-            search_value,
-
-            search_value,
-
-            search_value,
-
-            search_value,
-
-            search_value
-
-        ])
-
-
-    if status_filter:
 
         query += """
-            AND status = ?
+            ORDER BY id DESC
         """
 
 
-        parameters.append(
-            status_filter
-        )
+        applications = connection.execute(
+            query,
+            tuple(parameters)
+        ).fetchall()
 
 
-    query += """
-        ORDER BY id DESC
-    """
+        total_count = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM applications
+            """
+        ).fetchone()[0]
 
 
-    applications = connection.execute(
-        query,
-        parameters
-    ).fetchall()
+        submitted_count = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM applications
+            WHERE status = 'Submitted'
+            """
+        ).fetchone()[0]
 
 
-    total_count = connection.execute(
-        """
-        SELECT COUNT(*)
-        FROM applications
-        """
-    ).fetchone()[0]
+        selected_count = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM applications
+            WHERE status = 'Selected'
+            """
+        ).fetchone()[0]
 
 
-    submitted_count = connection.execute(
-        """
-        SELECT COUNT(*)
-        FROM applications
-        WHERE status = 'Submitted'
-        """
-    ).fetchone()[0]
+        shortlisted_count = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM applications
+            WHERE status = 'Shortlisted'
+            """
+        ).fetchone()[0]
 
 
-    selected_count = connection.execute(
-        """
-        SELECT COUNT(*)
-        FROM applications
-        WHERE status = 'Selected'
-        """
-    ).fetchone()[0]
+    finally:
 
-
-    shortlisted_count = connection.execute(
-        """
-        SELECT COUNT(*)
-        FROM applications
-        WHERE status = 'Shortlisted'
-        """
-    ).fetchone()[0]
-
-
-    connection.close()
+        connection.close()
 
 
     return render_template(
@@ -3154,19 +3171,22 @@ def admin_view_application(
     connection = get_db_connection()
 
 
-    application = connection.execute(
-        """
-        SELECT *
-        FROM applications
-        WHERE id = ?
-        """,
-        (
-            application_id,
-        )
-    ).fetchone()
+    try:
 
+        application = connection.execute(
+            """
+            SELECT *
+            FROM applications
+            WHERE id = %s
+            """,
+            (
+                application_id,
+            )
+        ).fetchone()
 
-    connection.close()
+    finally:
+
+        connection.close()
 
 
     if not application:
@@ -3238,43 +3258,54 @@ def update_application_status(
     connection = get_db_connection()
 
 
-    application = connection.execute(
-        """
-        SELECT id
-        FROM applications
-        WHERE id = ?
-        """,
-        (
-            application_id,
-        )
-    ).fetchone()
+    try:
+
+        application = connection.execute(
+            """
+            SELECT id
+            FROM applications
+            WHERE id = %s
+            """,
+            (
+                application_id,
+            )
+        ).fetchone()
 
 
-    if not application:
+        if not application:
+
+            return (
+                "Application not found.",
+                404
+            )
+
+
+        connection.execute(
+            """
+            UPDATE applications
+            SET status = %s
+            WHERE id = %s
+            """,
+            (
+                new_status,
+                application_id
+            )
+        ).close()
+
+
+        connection.commit()
+
+
+    except Exception:
+
+        connection.rollback()
+
+        raise
+
+
+    finally:
 
         connection.close()
-
-        return (
-            "Application not found.",
-            404
-        )
-
-
-    connection.execute(
-        """
-        UPDATE applications
-        SET status = ?
-        WHERE id = ?
-        """,
-        (
-            new_status,
-            application_id
-        )
-    )
-
-
-    connection.commit()
-    connection.close()
 
 
     return redirect(
@@ -3311,32 +3342,62 @@ def admin_delete_application(
     connection = get_db_connection()
 
 
-    application = connection.execute(
-        """
-        SELECT id, resume_filename
-        FROM applications
-        WHERE id = ?
-        """,
-        (
-            application_id,
+    try:
+
+        application = connection.execute(
+            """
+            SELECT id, resume_filename
+            FROM applications
+            WHERE id = %s
+            """,
+            (
+                application_id,
+            )
+        ).fetchone()
+
+
+        if not application:
+
+            return (
+                "Application not found.",
+                404
+            )
+
+
+        resume_filename = (
+            application["resume_filename"]
         )
-    ).fetchone()
 
 
-    if not application:
+        connection.execute(
+            """
+            DELETE FROM applications
+            WHERE id = %s
+            """,
+            (
+                application_id,
+            )
+        ).close()
+
+
+        connection.commit()
+
+
+    except Exception:
+
+        connection.rollback()
+
+        raise
+
+
+    finally:
 
         connection.close()
 
-        return (
-            "Application not found.",
-            404
-        )
 
-
-    resume_filename = (
-        application["resume_filename"]
-    )
-
+    # ------------------------------------------
+    # Delete local resume
+    # ------------------------------------------
 
     if resume_filename:
 
@@ -3359,21 +3420,6 @@ def admin_delete_application(
             except OSError:
 
                 pass
-
-
-    connection.execute(
-        """
-        DELETE FROM applications
-        WHERE id = ?
-        """,
-        (
-            application_id,
-        )
-    )
-
-
-    connection.commit()
-    connection.close()
 
 
     return redirect(
@@ -3408,19 +3454,22 @@ def admin_download_resume(
     connection = get_db_connection()
 
 
-    application = connection.execute(
-        """
-        SELECT *
-        FROM applications
-        WHERE id = ?
-        """,
-        (
-            application_id,
-        )
-    ).fetchone()
+    try:
 
+        application = connection.execute(
+            """
+            SELECT *
+            FROM applications
+            WHERE id = %s
+            """,
+            (
+                application_id,
+            )
+        ).fetchone()
 
-    connection.close()
+    finally:
+
+        connection.close()
 
 
     if not application:
@@ -3468,7 +3517,7 @@ def admin_download_resume(
 
 
 # ==================================================
-# ADMIN EXPORT EXCEL
+# ADMIN EXPORT TO EXCEL
 # ==================================================
 
 @app.route(
@@ -3490,16 +3539,19 @@ def admin_export_excel():
     connection = get_db_connection()
 
 
-    applications = connection.execute(
-        """
-        SELECT *
-        FROM applications
-        ORDER BY id DESC
-        """
-    ).fetchall()
+    try:
 
+        applications = connection.execute(
+            """
+            SELECT *
+            FROM applications
+            ORDER BY id DESC
+            """
+        ).fetchall()
 
-    connection.close()
+    finally:
+
+        connection.close()
 
 
     workbook = Workbook()
@@ -3742,7 +3794,7 @@ def file_too_large(error):
 
 
 # ==================================================
-# RUN
+# RUN APPLICATION
 # ==================================================
 
 if __name__ == "__main__":
