@@ -6,12 +6,12 @@ from flask import (
     url_for,
     session,
     send_file,
-    send_from_directory
+    send_from_directory,
 )
 
 from werkzeug.security import (
     generate_password_hash,
-    check_password_hash
+    check_password_hash,
 )
 
 from werkzeug.utils import secure_filename
@@ -19,7 +19,7 @@ from werkzeug.utils import secure_filename
 from database import (
     get_db_connection,
     init_db,
-    upgrade_database
+    upgrade_database,
 )
 
 from openpyxl import Workbook
@@ -28,7 +28,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import (
     getSampleStyleSheet,
-    ParagraphStyle
+    ParagraphStyle,
 )
 from reportlab.lib.enums import TA_CENTER
 from reportlab.platypus import (
@@ -36,7 +36,7 @@ from reportlab.platypus import (
     Paragraph,
     Spacer,
     Table,
-    TableStyle
+    TableStyle,
 )
 
 import os
@@ -47,7 +47,7 @@ import html
 from datetime import (
     datetime,
     timedelta,
-    timezone
+    timezone,
 )
 
 from email.message import EmailMessage
@@ -59,6 +59,7 @@ from email.utils import make_msgid
 # ==================================================
 
 app = Flask(__name__)
+
 APPLICATION_STATUSES = [
     "Submitted",
     "Under Review",
@@ -74,53 +75,51 @@ APPLICATION_STATUSES = [
 
 app.secret_key = os.environ.get(
     "SECRET_KEY",
-    "change-this-secret-key-before-production"
+    "change-this-secret-key-before-production",
 )
+
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-
 app.config["SESSION_COOKIE_SECURE"] = (
     os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
 )
-
-app.permanent_session_lifetime = 60 * 60 * 24
-app.permanent_session_lifetime = 60 * 60 * 24
+app.permanent_session_lifetime = timedelta(days=1)
 
 
 # ==================================================
 # BREVO SMTP CONFIGURATION
 # ==================================================
 
-SMTP_LOGIN = os.environ.get(
-    "SMTP_LOGIN",
-    ""
-)
+SMTP_LOGIN = os.environ.get("SMTP_LOGIN", "")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SMTP_HOST = os.environ.get("SMTP_HOST", "smtp-relay.brevo.com")
 
-SMTP_PASSWORD = os.environ.get(
-    "SMTP_PASSWORD",
-    ""
-)
-
-SMTP_HOST = os.environ.get(
-    "SMTP_HOST",
-    "smtp-relay.brevo.com"
-)
-
-SMTP_PORT = int(
-    os.environ.get(
-        "SMTP_PORT",
-        "587"
-    )
-)
+try:
+    SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+except (TypeError, ValueError):
+    SMTP_PORT = 587
 
 FROM_EMAIL = os.environ.get(
     "FROM_EMAIL",
-    "trekso275@gmail.com"
+    "trekso275@gmail.com",
 )
-
 FROM_NAME = os.environ.get(
     "FROM_NAME",
-    "Trekso Careers"
+    "Trekso Careers",
+)
+
+
+# ==================================================
+# ADMIN CONFIGURATION
+# ==================================================
+
+ADMIN_USERNAME = os.environ.get(
+    "ADMIN_USERNAME",
+    "admin",
+)
+ADMIN_PASSWORD = os.environ.get(
+    "ADMIN_PASSWORD",
+    "trekso1245",
 )
 
 
@@ -130,22 +129,22 @@ FROM_NAME = os.environ.get(
 
 WALKIN_OFFICE_ADDRESS = os.environ.get(
     "WALKIN_OFFICE_ADDRESS",
-    "Trekso Office Address - To Be Updated"
+    "Trekso Office Address - To Be Updated",
 )
 
 WALKIN_DATE = os.environ.get(
     "WALKIN_DATE",
-    "Interview Date - To Be Updated"
+    "Interview Date - To Be Updated",
 )
 
 WALKIN_TIME = os.environ.get(
     "WALKIN_TIME",
-    "Interview Time - To Be Updated"
+    "Interview Time - To Be Updated",
 )
 
 WALKIN_CONTACT = os.environ.get(
     "WALKIN_CONTACT",
-    "Contact Number - To Be Updated"
+    "Contact Number - To Be Updated",
 )
 
 
@@ -153,55 +152,137 @@ WALKIN_CONTACT = os.environ.get(
 # FILE CONFIGURATION
 # ==================================================
 
-UPLOAD_FOLDER = "uploads"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-PDF_FOLDER = "generated_pdfs"
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+PDF_FOLDER = os.path.join(BASE_DIR, "generated_pdfs")
 
 ALLOWED_EXTENSIONS = {
     "pdf",
     "doc",
-    "docx"
+    "docx",
 }
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 
-app.config["MAX_CONTENT_LENGTH"] = (
-    5 * 1024 * 1024
-)
-
-os.makedirs(
-    UPLOAD_FOLDER,
-    exist_ok=True
-)
-
-os.makedirs(
-    PDF_FOLDER,
-    exist_ok=True
-)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(PDF_FOLDER, exist_ok=True)
 
 
 # ==================================================
 # DATABASE INITIALIZATION
 # ==================================================
 
-init_db()
-upgrade_database()
+try:
+    init_db()
+    upgrade_database()
+    print("Database initialization completed.")
+except Exception:
+    app.logger.exception("Database initialization failed during startup.")
 
 
 # ==================================================
-# HELPER
+# HELPERS
 # ==================================================
 
 def allowed_file(filename):
-
     return (
-        "." in filename
-        and filename.rsplit(
-            ".",
-            1
-        )[1].lower()
-        in ALLOWED_EXTENSIONS
+        bool(filename)
+        and "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
     )
+
+
+def utc_now_naive():
+    """Return current UTC time without timezone information."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def get_current_user():
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return None
+
+    connection = get_db_connection()
+
+    try:
+        return connection.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE id = %s
+            """,
+            (user_id,),
+        ).fetchone()
+    finally:
+        connection.close()
+
+
+def application_exists_for_user(user_id):
+    connection = get_db_connection()
+
+    try:
+        return connection.execute(
+            """
+            SELECT id
+            FROM applications
+            WHERE user_id = %s
+            LIMIT 1
+            """,
+            (user_id,),
+        ).fetchone()
+    finally:
+        connection.close()
+
+
+def get_application_by_id(application_id):
+    connection = get_db_connection()
+
+    try:
+        return connection.execute(
+            """
+            SELECT *
+            FROM applications
+            WHERE id = %s
+            """,
+            (application_id,),
+        ).fetchone()
+    finally:
+        connection.close()
+
+
+def applicant_logged_in():
+    return bool(session.get("user_id"))
+
+
+def admin_logged_in():
+    return bool(session.get("admin_logged_in"))
+
+
+def application_pdf_path(application_id):
+    return os.path.join(
+        PDF_FOLDER,
+        f"application_{application_id}.pdf",
+    )
+
+
+def applicant_login_required():
+    if not session.get("user_id"):
+        return False
+
+    user = get_current_user()
+
+    if not user:
+        session.clear()
+        return False
+
+    if int(user.get("email_verified", 0) or 0) != 1:
+        session.clear()
+        return False
+
+    return True
 
 
 # ==================================================
@@ -213,244 +294,194 @@ def send_email(
     subject,
     body,
     attachment_path=None,
-    attachment_name=None
+    attachment_name=None,
 ):
+    """
+    Build and send a Trekso email through Brevo SMTP.
+
+    Returns:
+        True  -> email sent successfully
+        False -> email could not be sent
+
+    The SMTP connection has a short timeout so the Render Gunicorn
+    worker does not remain blocked indefinitely.
+    """
 
     if not SMTP_LOGIN:
-        raise RuntimeError(
-            "SMTP_LOGIN is not configured."
-        )
+        app.logger.error("SMTP_LOGIN is not configured.")
+        return False
 
     if not SMTP_PASSWORD:
-        raise RuntimeError(
-            "SMTP_PASSWORD is not configured."
-        )
+        app.logger.error("SMTP_PASSWORD is not configured.")
+        return False
 
     if not FROM_EMAIL:
-        raise RuntimeError(
-            "FROM_EMAIL is not configured."
-        )
-
+        app.logger.error("FROM_EMAIL is not configured.")
+        return False
 
     message = EmailMessage()
-
     message["Subject"] = subject
-
-    message["From"] = (
-        f"{FROM_NAME} <{FROM_EMAIL}>"
-    )
-
+    message["From"] = f"{FROM_NAME} <{FROM_EMAIL}>"
     message["To"] = recipient_email
 
-
-    # Plain-text fallback
+    # Plain-text fallback.
     message.set_content(body)
 
-
-    # ==================================================
-    # TREKSO LOGO
-    # ==================================================
+    # --------------------------------------------------
+    # Trekso logo as inline CID image
+    # --------------------------------------------------
 
     logo_path = os.path.join(
+        BASE_DIR,
         "static",
         "images",
-        "trekso-logo.png"
+        "trekso-logo.png",
     )
 
-    logo_cid = make_msgid(
-        domain="trekso"
-    )
+    logo_cid = make_msgid(domain="trekso")
 
-
-    safe_body = html.escape(
-        body
-    ).replace(
-        "\n",
-        "<br>"
-    )
-
+    safe_body = html.escape(str(body)).replace("\n", "<br>")
+    safe_subject = html.escape(str(subject))
 
     html_body = f"""
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>{html.escape(subject)}</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{safe_subject}</title>
 </head>
-
-<body style="
-    margin:0;
-    padding:0;
-    background:#f5f5f5;
-    font-family:Arial,Helvetica,sans-serif;
-">
-
-    <div style="
-        max-width:620px;
-        margin:30px auto;
-        background:#ffffff;
-        border-radius:14px;
-        overflow:hidden;
-        box-shadow:0 5px 25px rgba(0,0,0,0.08);
-    ">
-
-        <div style="
-            padding:25px 20px;
-            text-align:center;
-            border-bottom:1px solid #eeeeee;
-            background:#ffffff;
-        ">
-
-            <img
-                src="cid:{logo_cid[1:-1]}"
-                alt="Trekso"
-                style="
-                    max-width:190px;
-                    width:100%;
-                    height:auto;
-                    display:block;
-                    margin:0 auto;
-                "
-            >
-
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,Helvetica,sans-serif;">
+    <div style="max-width:620px;margin:30px auto;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 5px 25px rgba(0,0,0,0.08);">
+        <div style="padding:25px 20px;text-align:center;border-bottom:1px solid #eeeeee;background:#ffffff;">
+            <img src="cid:{logo_cid[1:-1]}"
+                 alt="Trekso"
+                 style="max-width:190px;width:100%;height:auto;display:block;margin:0 auto;">
         </div>
 
-
-        <div style="
-            padding:30px;
-            color:#333333;
-            font-size:15px;
-            line-height:1.7;
-        ">
-
+        <div style="padding:30px;color:#333333;font-size:15px;line-height:1.7;">
             {safe_body}
-
         </div>
 
-
-        <div style="
-            padding:18px;
-            text-align:center;
-            background:#111111;
-            color:#ffffff;
-            font-size:12px;
-        ">
-
-            © 2026 Trekso Careers.
-            All rights reserved.
-
+        <div style="padding:18px;text-align:center;background:#111111;color:#ffffff;font-size:12px;">
+            © 2026 Trekso Careers. All rights reserved.
         </div>
-
     </div>
-
 </body>
-
 </html>
 """
 
+    message.add_alternative(html_body, subtype="html")
 
-    message.add_alternative(
-        html_body,
-        subtype="html"
-    )
+    if os.path.isfile(logo_path):
+        try:
+            with open(logo_path, "rb") as logo_file:
+                logo_data = logo_file.read()
 
+            html_part = message.get_body(preferencelist=("html",))
 
-    # ==================================================
-    # INLINE LOGO
-    # ==================================================
+            if html_part is not None:
+                html_part.add_related(
+                    logo_data,
+                    maintype="image",
+                    subtype="png",
+                    cid=logo_cid,
+                    filename="trekso-logo.png",
+                )
+        except Exception:
+            app.logger.exception("Could not attach Trekso email logo.")
 
-    if os.path.isfile(
-        logo_path
-    ):
-
-        with open(
-            logo_path,
-            "rb"
-        ) as logo_file:
-
-            logo_data = logo_file.read()
-
-
-        html_part = message.get_payload()[-1]
-
-
-        html_part.add_related(
-            logo_data,
-            maintype="image",
-            subtype="png",
-            cid=logo_cid,
-            filename="trekso-logo.png"
-        )
-
-
-    # ==================================================
-    # PDF ATTACHMENT
-    # ==================================================
+    # --------------------------------------------------
+    # Optional PDF attachment
+    # --------------------------------------------------
 
     if attachment_path:
-
-        with open(
-            attachment_path,
-            "rb"
-        ) as attachment_file:
-
-            file_data = attachment_file.read()
-
-
-        message.add_attachment(
-            file_data,
-            maintype="application",
-            subtype="pdf",
-            filename=(
-                attachment_name
-                or os.path.basename(
-                    attachment_path
-                )
+        if not os.path.isfile(attachment_path):
+            app.logger.error(
+                "Email attachment does not exist: %s",
+                attachment_path,
             )
+            return False
+
+        try:
+            with open(attachment_path, "rb") as attachment_file:
+                file_data = attachment_file.read()
+
+            message.add_attachment(
+                file_data,
+                maintype="application",
+                subtype="pdf",
+                filename=(
+                    attachment_name
+                    or os.path.basename(attachment_path)
+                ),
+            )
+        except Exception:
+            app.logger.exception("Could not attach PDF to email.")
+            return False
+
+    # --------------------------------------------------
+    # Send through Brevo SMTP
+    # --------------------------------------------------
+
+    try:
+        with smtplib.SMTP(
+            SMTP_HOST,
+            SMTP_PORT,
+            timeout=10,
+        ) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(
+                SMTP_LOGIN,
+                SMTP_PASSWORD,
+            )
+            server.send_message(message)
+
+        app.logger.info(
+            "Email sent successfully to %s",
+            recipient_email,
         )
+        return True
 
-
-    # ==================================================
-    # SEND THROUGH BREVO
-    # ==================================================
-
-    with smtplib.SMTP(
-        SMTP_HOST,
-        SMTP_PORT
-    ) as server:
-
-        server.starttls()
-
-        server.login(
-            SMTP_LOGIN,
-            SMTP_PASSWORD
+    except smtplib.SMTPAuthenticationError:
+        app.logger.exception(
+            "Brevo SMTP authentication failed."
         )
+        return False
 
-        server.send_message(
-            message
+    except smtplib.SMTPConnectError:
+        app.logger.exception(
+            "Could not connect to Brevo SMTP server."
         )
+        return False
+
+    except smtplib.SMTPException:
+        app.logger.exception(
+            "Brevo SMTP error occurred."
+        )
+        return False
+
+    except (TimeoutError, OSError):
+        app.logger.exception(
+            "Network error or timeout while connecting to Brevo SMTP."
+        )
+        return False
+
+    except Exception:
+        app.logger.exception(
+            "Unexpected error while sending email."
+        )
+        return False
 
 
 # ==================================================
 # SEND OTP EMAIL
 # ==================================================
 
-def send_otp_email(
-    recipient_email,
-    otp
-):
-
-    subject = (
-        "Trekso - Email Verification OTP"
-    )
-
+def send_otp_email(recipient_email, otp):
+    subject = "Trekso - Email Verification OTP"
 
     body = f"""
 Dear Applicant,
@@ -469,11 +500,10 @@ Regards,
 Trekso Careers
 """
 
-
-    send_email(
+    return send_email(
         recipient_email,
         subject,
-        body
+        body,
     )
 
 
@@ -481,22 +511,9 @@ Trekso Careers
 # CREATE APPLICATION PDF
 # ==================================================
 
-def create_application_pdf(
-    application
-):
-
-    pdf_filename = (
-        "application_"
-        + str(application["id"])
-        + ".pdf"
-    )
-
-
-    pdf_path = os.path.join(
-        PDF_FOLDER,
-        pdf_filename
-    )
-
+def create_application_pdf(application):
+    pdf_filename = f"application_{application['id']}.pdf"
+    pdf_path = os.path.join(PDF_FOLDER, pdf_filename)
 
     document = SimpleDocTemplate(
         pdf_path,
@@ -504,453 +521,163 @@ def create_application_pdf(
         rightMargin=40,
         leftMargin=40,
         topMargin=40,
-        bottomMargin=40
+        bottomMargin=40,
     )
 
-
     styles = getSampleStyleSheet()
-
 
     title_style = ParagraphStyle(
         "TitleStyle",
         parent=styles["Title"],
         fontSize=20,
         alignment=TA_CENTER,
-        textColor=colors.HexColor(
-            "#111111"
-        ),
-        spaceAfter=10
+        textColor=colors.HexColor("#111111"),
+        spaceAfter=10,
     )
-
 
     subtitle_style = ParagraphStyle(
         "SubtitleStyle",
         parent=styles["Heading2"],
         alignment=TA_CENTER,
-        textColor=colors.HexColor(
-            "#ff4b00"
-        ),
-        spaceAfter=20
+        textColor=colors.HexColor("#ff4b00"),
+        spaceAfter=20,
     )
-
 
     normal_style = ParagraphStyle(
         "NormalStyle",
         parent=styles["Normal"],
         fontSize=10,
-        leading=15
+        leading=15,
     )
-
 
     footer_style = ParagraphStyle(
         "FooterStyle",
         parent=normal_style,
         alignment=TA_CENTER,
         fontSize=8,
-        textColor=colors.grey
+        textColor=colors.grey,
     )
 
+    def pdf_text(value, default=""):
+        if value is None:
+            value = default
+        return html.escape(str(value)).replace("\n", "<br/>")
 
     story = []
 
+    story.append(Paragraph("TREKSO", title_style))
+    story.append(Paragraph("JOB APPLICATION", subtitle_style))
 
     story.append(
         Paragraph(
-            "TREKSO",
-            title_style
+            f"<b>Application ID:</b> #{pdf_text(application['id'])}",
+            normal_style,
         )
     )
 
+    story.append(Spacer(1, 8))
 
     story.append(
         Paragraph(
-            "JOB APPLICATION",
-            subtitle_style
+            f"<b>Application Status:</b> {pdf_text(application.get('status', 'Submitted'))}",
+            normal_style,
         )
     )
 
-
-    story.append(
-        Paragraph(
-            "<b>Application ID:</b> #"
-            + str(
-                application["id"]
-            ),
-            normal_style
-        )
-    )
-
-
-    story.append(
-        Spacer(
-            1,
-            8
-        )
-    )
-
-
-    story.append(
-        Paragraph(
-            "<b>Application Status:</b> "
-            + str(
-                application["status"]
-            ),
-            normal_style
-        )
-    )
-
-
-    story.append(
-        Spacer(
-            1,
-            20
-        )
-    )
-
+    story.append(Spacer(1, 20))
 
     data = [
-
-        [
-            "Field",
-            "Details"
-        ],
-
-        [
-            "Job Position",
-            str(
-                application["position"]
-            )
-        ],
-
-        [
-            "Full Name",
-            str(
-                application["name"]
-            )
-        ],
-
-        [
-            "Email",
-            str(
-                application["email"]
-            )
-        ],
-
-        [
-            "Mobile Number",
-            str(
-                application["mobile"]
-            )
-        ],
-
-        [
-            "Date of Birth",
-            str(
-                application["dob"]
-            )
-        ],
-
-        [
-            "Gender",
-            str(
-                application["gender"]
-            )
-        ],
-
-        [
-            "Qualification",
-            str(
-                application["qualification"]
-            )
-        ],
-
-        [
-            "College Name",
-            str(
-                application["college_name"]
-            )
-        ],
-
-        [
-            "University Name",
-            str(
-                application["university_name"]
-            )
-        ],
-
-        [
-            "Branch / Specialization",
-            str(
-                application["branch"]
-            )
-        ],
-
-        [
-            "Graduation Year",
-            str(
-                application["graduation_year"]
-            )
-        ],
-
-        [
-            "Candidate Type",
-            str(
-                application["candidate_type"]
-            )
-        ],
-
-        [
-            "Experience",
-            str(
-                application["experience"]
-                or "N/A"
-            )
-        ],
-
-        [
-            "Technical Skills",
-            str(
-                application["skills"]
-            )
-        ],
-
-        [
-            "Address",
-            str(
-                application["address"]
-            )
-        ],
-
-        [
-            "Resume",
-            str(
-                application["resume_filename"]
-                or "Not uploaded"
-            )
-        ],
-
-        [
-            "Submitted On",
-            str(
-                application["created_at"]
-            )
-        ]
-
+        ["Field", "Details"],
+        ["Job Position", pdf_text(application.get("position"))],
+        ["Full Name", pdf_text(application.get("name"))],
+        ["Email", pdf_text(application.get("email"))],
+        ["Mobile Number", pdf_text(application.get("mobile"))],
+        ["Date of Birth", pdf_text(application.get("dob"))],
+        ["Gender", pdf_text(application.get("gender"))],
+        ["Qualification", pdf_text(application.get("qualification"))],
+        ["College Name", pdf_text(application.get("college_name"))],
+        ["University Name", pdf_text(application.get("university_name"))],
+        ["Branch / Specialization", pdf_text(application.get("branch"))],
+        ["Graduation Year", pdf_text(application.get("graduation_year"))],
+        ["Candidate Type", pdf_text(application.get("candidate_type"))],
+        ["Experience", pdf_text(application.get("experience"), "N/A")],
+        ["Technical Skills", pdf_text(application.get("skills"))],
+        ["Address", pdf_text(application.get("address"))],
+        ["Resume", pdf_text(application.get("resume_filename"), "Not uploaded")],
+        ["Submitted On", pdf_text(application.get("created_at"))],
     ]
-
 
     table = Table(
         data,
-        colWidths=[
-            160,
-            330
-        ],
-        repeatRows=1
+        colWidths=[160, 330],
+        repeatRows=1,
     )
-
 
     table.setStyle(
-        TableStyle([
-
-            (
-                "BACKGROUND",
-                (0, 0),
-                (-1, 0),
-                colors.HexColor(
-                    "#ff4b00"
-                )
-            ),
-
-            (
-                "TEXTCOLOR",
-                (0, 0),
-                (-1, 0),
-                colors.white
-            ),
-
-            (
-                "FONTNAME",
-                (0, 0),
-                (-1, 0),
-                "Helvetica-Bold"
-            ),
-
-            (
-                "FONTNAME",
-                (0, 1),
-                (0, -1),
-                "Helvetica-Bold"
-            ),
-
-            (
-                "GRID",
-                (0, 0),
-                (-1, -1),
-                0.5,
-                colors.grey
-            ),
-
-            (
-                "VALIGN",
-                (0, 0),
-                (-1, -1),
-                "TOP"
-            ),
-
-            (
-                "FONTSIZE",
-                (0, 0),
-                (-1, -1),
-                9
-            ),
-
-            (
-                "LEFTPADDING",
-                (0, 0),
-                (-1, -1),
-                8
-            ),
-
-            (
-                "RIGHTPADDING",
-                (0, 0),
-                (-1, -1),
-                8
-            ),
-
-            (
-                "TOPPADDING",
-                (0, 0),
-                (-1, -1),
-                8
-            ),
-
-            (
-                "BOTTOMPADDING",
-                (0, 0),
-                (-1, -1),
-                8
-            )
-
-        ])
-    )
-
-
-    story.append(
-        table
-    )
-
-
-    story.append(
-        Spacer(
-            1,
-            25
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#ff4b00")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTNAME", (0, 1), (0, -1), "Helvetica-Bold"),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ]
         )
     )
 
+    story.append(table)
+    story.append(Spacer(1, 25))
 
     story.append(
         Paragraph(
-            (
-                "Please carry this application copy "
-                "when attending the Trekso walk-in interview."
-            ),
-            normal_style
+            "Please carry this application copy when attending the Trekso walk-in interview.",
+            normal_style,
         )
     )
 
-
-    story.append(
-        Spacer(
-            1,
-            15
-        )
-    )
-
+    story.append(Spacer(1, 15))
 
     story.append(
         Paragraph(
-            (
-                "<b>Walk-in Interview Address:</b> "
-                + html.escape(
-                    str(
-                        WALKIN_OFFICE_ADDRESS
-                    )
-                )
-            ),
-            normal_style
+            f"<b>Walk-in Interview Address:</b> {pdf_text(WALKIN_OFFICE_ADDRESS)}",
+            normal_style,
+        )
+    )
+    story.append(
+        Paragraph(
+            f"<b>Interview Date:</b> {pdf_text(WALKIN_DATE)}",
+            normal_style,
+        )
+    )
+    story.append(
+        Paragraph(
+            f"<b>Interview Time:</b> {pdf_text(WALKIN_TIME)}",
+            normal_style,
+        )
+    )
+    story.append(
+        Paragraph(
+            f"<b>Contact:</b> {pdf_text(WALKIN_CONTACT)}",
+            normal_style,
         )
     )
 
+    story.append(Spacer(1, 20))
 
     story.append(
         Paragraph(
-            (
-                "<b>Interview Date:</b> "
-                + html.escape(
-                    str(
-                        WALKIN_DATE
-                    )
-                )
-            ),
-            normal_style
+            "This document was generated electronically by Trekso Careers.",
+            footer_style,
         )
     )
 
-
-    story.append(
-        Paragraph(
-            (
-                "<b>Interview Time:</b> "
-                + html.escape(
-                    str(
-                        WALKIN_TIME
-                    )
-                )
-            ),
-            normal_style
-        )
-    )
-
-
-    story.append(
-        Paragraph(
-            (
-                "<b>Contact:</b> "
-                + html.escape(
-                    str(
-                        WALKIN_CONTACT
-                    )
-                )
-            ),
-            normal_style
-        )
-    )
-
-
-    story.append(
-        Spacer(
-            1,
-            20
-        )
-    )
-
-
-    story.append(
-        Paragraph(
-            (
-                "This document was generated "
-                "electronically by Trekso Careers."
-            ),
-            footer_style
-        )
-    )
-
-
-    document.build(
-        story
-    )
-
+    document.build(story)
 
     return pdf_path
 
@@ -959,56 +686,43 @@ def create_application_pdf(
 # APPLICATION SUCCESS EMAIL
 # ==================================================
 
-def send_application_success_email(
-    application,
-    pdf_path
-):
-
-    subject = (
-        "Trekso - Application Submitted Successfully"
-    )
-
+def send_application_success_email(application, pdf_path):
+    subject = "Trekso - Application Submitted Successfully"
 
     body = f"""
-Dear {application["name"]},
+Dear {application['name']},
 
 Congratulations!
 
-Your job application has been successfully
-submitted to Trekso Careers.
-
+Your job application has been successfully submitted to Trekso Careers.
 
 APPLICATION DETAILS
 -------------------
 
 Application ID:
-#{application["id"]}
+#{application['id']}
 
 Position:
-{application["position"]}
+{application['position']}
 
 Status:
-{application["status"]}
+{application['status']}
 
 Name:
-{application["name"]}
+{application['name']}
 
 Email:
-{application["email"]}
+{application['email']}
 
 Mobile:
-{application["mobile"]}
+{application['mobile']}
 
-
-Your submitted application PDF is attached
-to this email.
-
+Your submitted application PDF is attached to this email.
 
 WALK-IN INTERVIEW
 -----------------
 
-Please attend the Trekso walk-in interview
-at our office.
+Please attend the Trekso walk-in interview at our office.
 
 Office Address:
 {WALKIN_OFFICE_ADDRESS}
@@ -1022,29 +736,21 @@ Interview Time:
 Contact Number:
 {WALKIN_CONTACT}
 
-
-Please carry the application PDF and your
-resume when attending the interview.
-
+Please carry the application PDF and your resume when attending the interview.
 
 Regards,
 
 Trekso Careers
 """
 
-
-    send_email(
+    return send_email(
         application["email"],
         subject,
         body,
         attachment_path=pdf_path,
         attachment_name=(
-            "Trekso_Application_"
-            + str(
-                application["id"]
-            )
-            + ".pdf"
-        )
+            f"Trekso_Application_{application['id']}.pdf"
+        ),
     )
 
 
@@ -1054,608 +760,367 @@ Trekso Careers
 
 @app.route("/")
 def home():
+    return render_template("home.html")
 
-    return render_template(
-        "home.html"
-    )
+
+# Compatibility endpoint for older error.html files using url_for('index').
+@app.route("/index")
+def index():
+    return redirect(url_for("home"))
 
 
 # ==================================================
 # APPLICANT REGISTRATION
-#
-# No user account is created here.
-# Only pending_registrations is created.
 # ==================================================
 
-@app.route(
-    "/register",
-    methods=["GET", "POST"]
-)
+@app.route("/register", methods=["GET", "POST"])
 def register():
+    if request.method == "GET":
+        return render_template("register.html")
 
-    if request.method == "POST":
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    mobile = request.form.get("mobile", "").strip()
+    password = request.form.get("password", "")
 
-        name = request.form.get(
-            "name",
-            ""
-        ).strip()
-
-        email = request.form.get(
-            "email",
-            ""
-        ).strip().lower()
-
-        mobile = request.form.get(
-            "mobile",
-            ""
-        ).strip()
-
-        password = request.form.get(
-            "password",
-            ""
+    if not name or not email or not mobile or not password:
+        return render_template(
+            "register.html",
+            error="All fields are required.",
         )
 
+    connection = get_db_connection()
+    otp = None
 
-        # ------------------------------------------
-        # Validation
-        # ------------------------------------------
+    try:
+        existing_user = connection.execute(
+            """
+            SELECT id
+            FROM users
+            WHERE LOWER(email) = LOWER(%s)
+            """,
+            (email,),
+        ).fetchone()
 
-        if not name or not email or not mobile or not password:
-
+        if existing_user:
             return render_template(
                 "register.html",
-                error="All fields are required."
+                error="Email already registered. Please login.",
             )
 
+        existing_mobile_user = connection.execute(
+            """
+            SELECT id
+            FROM users
+            WHERE mobile = %s
+            """,
+            (mobile,),
+        ).fetchone()
 
-        connection = get_db_connection()
+        if existing_mobile_user:
+            return render_template(
+                "register.html",
+                error="Mobile number already registered.",
+            )
 
+        # Remove an old pending registration for the same email so that
+        # the newest OTP/password is the active one.
+        connection.execute(
+            """
+            DELETE FROM pending_registrations
+            WHERE LOWER(email) = LOWER(%s)
+            """,
+            (email,),
+        ).close()
+
+        pending_mobile = connection.execute(
+            """
+            SELECT email
+            FROM pending_registrations
+            WHERE mobile = %s
+            """,
+            (mobile,),
+        ).fetchone()
+
+        if pending_mobile:
+            return render_template(
+                "register.html",
+                error="This mobile number is already under verification.",
+            )
+
+        otp = str(random.randint(100000, 999999))
+
+        otp_expiry = (
+            utc_now_naive()
+            + timedelta(minutes=10)
+        )
+
+        password_hash = generate_password_hash(password)
+
+        connection.execute(
+            """
+            INSERT INTO pending_registrations (
+                name,
+                email,
+                mobile,
+                password_hash,
+                otp,
+                otp_expiry,
+                otp_attempts
+            )
+            VALUES (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s
+            )
+            """,
+            (
+                name,
+                email,
+                mobile,
+                password_hash,
+                otp,
+                otp_expiry,
+                0,
+            ),
+        ).close()
+
+        connection.commit()
+
+    except Exception:
+        connection.rollback()
+        app.logger.exception("Registration database error.")
+        return render_template(
+            "register.html",
+            error="Unable to start registration. Please try again.",
+        )
+
+    finally:
+        connection.close()
+
+    # Send OTP after the pending registration has been committed.
+    email_sent = send_otp_email(email, otp)
+
+    if not email_sent:
+        # Remove the pending record so a new registration attempt can
+        # generate a fresh OTP instead of leaving a dead pending record.
+        cleanup_connection = get_db_connection()
 
         try:
-
-            # --------------------------------------
-            # Already registered email
-            # --------------------------------------
-
-            existing_user = connection.execute(
-                """
-                SELECT id
-                FROM users
-                WHERE LOWER(email) = LOWER(%s)
-                """,
-                (
-                    email,
-                )
-            ).fetchone()
-
-
-            if existing_user:
-
-                return render_template(
-                    "register.html",
-                    error=(
-                        "Email already registered. "
-                        "Please login."
-                    )
-                )
-
-
-            # --------------------------------------
-            # Already registered mobile
-            # --------------------------------------
-
-            existing_mobile_user = connection.execute(
-                """
-                SELECT id
-                FROM users
-                WHERE mobile = %s
-                """,
-                (
-                    mobile,
-                )
-            ).fetchone()
-
-
-            if existing_mobile_user:
-
-                return render_template(
-                    "register.html",
-                    error=(
-                        "Mobile number already registered."
-                    )
-                )
-
-
-            # --------------------------------------
-            # Remove previous pending registration
-            # for same email
-            # --------------------------------------
-
-            connection.execute(
+            cleanup_connection.execute(
                 """
                 DELETE FROM pending_registrations
                 WHERE LOWER(email) = LOWER(%s)
                 """,
-                (
-                    email,
-                )
+                (email,),
             ).close()
-
-
-            # --------------------------------------
-            # Check pending mobile
-            # --------------------------------------
-
-            pending_mobile = connection.execute(
-                """
-                SELECT email
-                FROM pending_registrations
-                WHERE mobile = %s
-                """,
-                (
-                    mobile,
-                )
-            ).fetchone()
-
-
-            if pending_mobile:
-
-                return render_template(
-                    "register.html",
-                    error=(
-                        "This mobile number is already "
-                        "under verification."
-                    )
-                )
-
-
-            # --------------------------------------
-            # Generate OTP
-            # --------------------------------------
-
-            otp = str(
-                random.randint(
-                    100000,
-                    999999
-                )
-            )
-
-
-            otp_expiry = (
-                datetime.now(
-                    timezone.utc
-                )
-                + timedelta(
-                    minutes=10
-                )
-            )
-
-
-            # --------------------------------------
-            # Hash password
-            # --------------------------------------
-
-            password_hash = (
-                generate_password_hash(
-                    password
-                )
-            )
-
-
-            # --------------------------------------
-            # Save pending registration
-            # --------------------------------------
-
-            connection.execute(
-                """
-                INSERT INTO pending_registrations (
-
-                    name,
-                    email,
-                    mobile,
-                    password_hash,
-                    otp,
-                    otp_expiry,
-                    otp_attempts
-
-                )
-                VALUES (
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s
-                )
-                """,
-                (
-                    name,
-                    email,
-                    mobile,
-                    password_hash,
-                    otp,
-                    otp_expiry,
-                    0
-                )
-            ).close()
-
-
-            connection.commit()
-
-
+            cleanup_connection.commit()
         except Exception:
-
-            connection.rollback()
-
-            raise
-
-
+            cleanup_connection.rollback()
+            app.logger.exception("Could not clean failed pending registration.")
         finally:
+            cleanup_connection.close()
 
-            connection.close()
-
-
-        # ------------------------------------------
-        # Send OTP
-        # ------------------------------------------
-
-        try:
-
-            send_otp_email(
-                email,
-                otp
-            )
-
-        except Exception as error:
-
-            print(
-                "OTP email error:",
-                error
-            )
-
-
-            connection = get_db_connection()
-
-
-            try:
-
-                connection.execute(
-                    """
-                    DELETE FROM pending_registrations
-                    WHERE LOWER(email) = LOWER(%s)
-                    """,
-                    (
-                        email,
-                    )
-                ).close()
-
-
-                connection.commit()
-
-            finally:
-
-                connection.close()
-
-
-            return render_template(
-                "register.html",
-                error=(
-                    "Unable to send verification email. "
-                    "Please check the Brevo configuration "
-                    "and try again."
-                )
-            )
-
-
-        session.clear()
-
-        session[
-            "pending_registration_email"
-        ] = email
-
-
-        return redirect(
-            url_for(
-                "verify_email"
-            )
+        return render_template(
+            "register.html",
+            error=(
+                "Unable to send verification email right now. "
+                "Please try again in a few minutes."
+            ),
         )
 
+    session.clear()
+    session.permanent = True
+    session["pending_registration_email"] = email
 
-    return render_template(
-        "register.html"
-    )
+    return redirect(url_for("verify_email"))
 
 
 # ==================================================
 # VERIFY EMAIL OTP
-#
-# ACTUAL USER ACCOUNT IS CREATED ONLY HERE.
 # ==================================================
 
-@app.route(
-    "/verify-email",
-    methods=["GET", "POST"]
-)
+@app.route("/verify-email", methods=["GET", "POST"])
 def verify_email():
-
-    email = session.get(
-        "pending_registration_email"
-    )
-
+    email = session.get("pending_registration_email")
 
     if not email:
-
-        return redirect(
-            url_for(
-                "register"
-            )
-        )
-
+        return redirect(url_for("register"))
 
     connection = get_db_connection()
 
-
     try:
-
         pending = connection.execute(
             """
             SELECT *
             FROM pending_registrations
             WHERE LOWER(email) = LOWER(%s)
             """,
-            (
-                email,
-            )
+            (email,),
         ).fetchone()
 
-
         if not pending:
-
+            session.pop("pending_registration_email", None)
             return render_template(
                 "register.html",
                 error=(
-                    "Registration session expired. "
-                    "Please register again."
-                )
+                    "Registration session expired. Please register again."
+                ),
             )
 
+        if request.method == "GET":
+            return render_template("verify_email.html")
 
-        if request.method == "POST":
+        entered_otp = request.form.get("otp", "").strip()
 
-            entered_otp = request.form.get(
-                "otp",
-                ""
-            ).strip()
-
-
-            if not entered_otp:
-
-                return render_template(
-                    "verify_email.html",
-                    error="Please enter the OTP."
-                )
-
-
-            attempts = (
-                pending["otp_attempts"]
-                or 0
+        if not entered_otp:
+            return render_template(
+                "verify_email.html",
+                error="Please enter the OTP.",
             )
 
+        attempts = int(pending["otp_attempts"] or 0)
 
-            # --------------------------------------
-            # Maximum attempts
-            # --------------------------------------
+        if attempts >= 5:
+            return render_template(
+                "verify_email.html",
+                error=(
+                    "Too many incorrect OTP attempts. Please register again."
+                ),
+            )
 
-            if attempts >= 5:
+        expiry = pending["otp_expiry"]
 
-                return render_template(
-                    "verify_email.html",
-                    error=(
-                        "Too many incorrect OTP attempts. "
-                        "Please register again."
-                    )
-                )
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
 
+        if datetime.now(timezone.utc) > expiry:
+            return render_template(
+                "verify_email.html",
+                error="OTP expired. Please register again.",
+            )
 
-            # --------------------------------------
-            # OTP expiry
-            # --------------------------------------
-
-            expiry = pending["otp_expiry"]
-
-
-            if expiry.tzinfo is None:
-
-                expiry = expiry.replace(
-                    tzinfo=timezone.utc
-                )
-
-
-            if datetime.now(
-                timezone.utc
-            ) > expiry:
-
-                return render_template(
-                    "verify_email.html",
-                    error=(
-                        "OTP expired. "
-                        "Please register again."
-                    )
-                )
-
-
-            # --------------------------------------
-            # OTP comparison
-            # --------------------------------------
-
-            if entered_otp != str(
-                pending["otp"]
-            ):
-
-                attempts += 1
-
-
-                connection.execute(
-                    """
-                    UPDATE pending_registrations
-                    SET otp_attempts = %s
-                    WHERE id = %s
-                    """,
-                    (
-                        attempts,
-                        pending["id"]
-                    )
-                ).close()
-
-
-                connection.commit()
-
-
-                remaining = 5 - attempts
-
-
-                return render_template(
-                    "verify_email.html",
-                    error=(
-                        "Incorrect OTP. "
-                        + str(remaining)
-                        + " attempt(s) remaining."
-                    )
-                )
-
-
-            # --------------------------------------
-            # Final duplicate email check
-            # --------------------------------------
-
-            existing_user = connection.execute(
-                """
-                SELECT id
-                FROM users
-                WHERE LOWER(email) = LOWER(%s)
-                """,
-                (
-                    pending["email"],
-                )
-            ).fetchone()
-
-
-            if existing_user:
-
-                return render_template(
-                    "login.html",
-                    error=(
-                        "This email is already registered. "
-                        "Please login."
-                    )
-                )
-
-
-            # --------------------------------------
-            # Final duplicate mobile check
-            # --------------------------------------
-
-            existing_mobile = connection.execute(
-                """
-                SELECT id
-                FROM users
-                WHERE mobile = %s
-                """,
-                (
-                    pending["mobile"],
-                )
-            ).fetchone()
-
-
-            if existing_mobile:
-
-                return render_template(
-                    "register.html",
-                    error=(
-                        "This mobile number is already "
-                        "registered."
-                    )
-                )
-
-
-            # --------------------------------------
-            # Create actual verified account
-            # --------------------------------------
+        if entered_otp != str(pending["otp"]):
+            attempts += 1
 
             connection.execute(
                 """
-                INSERT INTO users (
-
-                    name,
-                    email,
-                    mobile,
-                    password,
-                    email_verified,
-                    mobile_verified
-
-                )
-                VALUES (
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s
-                )
-                """,
-                (
-                    pending["name"],
-                    pending["email"],
-                    pending["mobile"],
-                    pending["password_hash"],
-                    1,
-                    0
-                )
-            ).close()
-
-
-            # --------------------------------------
-            # Delete pending registration
-            # --------------------------------------
-
-            connection.execute(
-                """
-                DELETE FROM pending_registrations
+                UPDATE pending_registrations
+                SET otp_attempts = %s
                 WHERE id = %s
                 """,
-                (
-                    pending["id"],
-                )
+                (attempts, pending["id"]),
             ).close()
-
 
             connection.commit()
 
-
-            session.pop(
-                "pending_registration_email",
-                None
-            )
-
+            remaining = max(0, 5 - attempts)
 
             return render_template(
-                "login.html",
-                success=(
-                    "Email verified successfully. "
-                    "Your Trekso account has been created. "
-                    "You can now login."
-                )
+                "verify_email.html",
+                error=(
+                    f"Incorrect OTP. {remaining} attempt(s) remaining."
+                ),
             )
 
+        existing_user = connection.execute(
+            """
+            SELECT id
+            FROM users
+            WHERE LOWER(email) = LOWER(%s)
+            """,
+            (pending["email"],),
+        ).fetchone()
+
+        if existing_user:
+            session.pop("pending_registration_email", None)
+            return render_template(
+                "login.html",
+                error=(
+                    "This email is already registered. Please login."
+                ),
+            )
+
+        existing_mobile = connection.execute(
+            """
+            SELECT id
+            FROM users
+            WHERE mobile = %s
+            """,
+            (pending["mobile"],),
+        ).fetchone()
+
+        if existing_mobile:
+            session.pop("pending_registration_email", None)
+            return render_template(
+                "register.html",
+                error=(
+                    "This mobile number is already registered."
+                ),
+            )
+
+        connection.execute(
+            """
+            INSERT INTO users (
+                name,
+                email,
+                mobile,
+                password,
+                email_verified,
+                mobile_verified
+            )
+            VALUES (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s
+            )
+            """,
+            (
+                pending["name"],
+                pending["email"],
+                pending["mobile"],
+                pending["password_hash"],
+                1,
+                0,
+            ),
+        ).close()
+
+        connection.execute(
+            """
+            DELETE FROM pending_registrations
+            WHERE id = %s
+            """,
+            (pending["id"],),
+        ).close()
+
+        connection.commit()
+
+        session.pop("pending_registration_email", None)
 
         return render_template(
-            "verify_email.html"
+            "login.html",
+            success=(
+                "Email verified successfully. Your Trekso account has been created. "
+                "You can now login."
+            ),
         )
 
+    except Exception:
+        connection.rollback()
+        app.logger.exception("OTP verification error.")
+        return render_template(
+            "verify_email.html",
+            error="Unable to verify OTP right now. Please try again.",
+        ), 500
 
     finally:
-
         connection.close()
 
 
@@ -1663,98 +1128,61 @@ def verify_email():
 # APPLICANT LOGIN
 # ==================================================
 
-@app.route(
-    "/login",
-    methods=["GET", "POST"]
-)
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "GET":
+        return render_template("login.html")
 
-    if request.method == "POST":
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
 
-        email = request.form.get(
-            "email",
-            ""
-        ).strip().lower()
+    connection = get_db_connection()
 
-        password = request.form.get(
-            "password",
-            ""
-        )
+    try:
+        user = connection.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE LOWER(email) = LOWER(%s)
+            """,
+            (email,),
+        ).fetchone()
+    finally:
+        connection.close()
 
+    valid_password = False
 
-        connection = get_db_connection()
-
-
+    if user and user.get("password"):
         try:
+            valid_password = check_password_hash(
+                user["password"],
+                password,
+            )
+        except (TypeError, ValueError):
+            valid_password = False
 
-            user = connection.execute(
-                """
-                SELECT *
-                FROM users
-                WHERE LOWER(email) = LOWER(%s)
-                """,
-                (
-                    email,
-                )
-            ).fetchone()
-
-        finally:
-
-            connection.close()
-
-
-        if user and check_password_hash(
-            user["password"],
-            password
-        ):
-
-            if user["email_verified"] != 1:
-
-                return render_template(
-                    "login.html",
-                    error=(
-                        "Please verify your email "
-                        "before logging in."
-                    )
-                )
-
-
-            session.clear()
-
-            session.permanent = True
-
-            session["user_id"] = (
-                user["id"]
+    if valid_password:
+        if int(user.get("email_verified", 0) or 0) != 1:
+            return render_template(
+                "login.html",
+                error="Please verify your email before logging in.",
             )
 
-            session["user_name"] = (
-                user["name"]
-            )
+        # Clear any admin/pending session and establish a fresh applicant
+        # session. This makes switching between different applicants in
+        # the same browser deterministic.
+        session.clear()
+        session.permanent = True
+        session["user_id"] = user["id"]
+        session["user_name"] = user["name"]
+        session["user_email"] = user["email"]
+        session["user_mobile"] = user["mobile"]
 
-            session["user_email"] = (
-                user["email"]
-            )
-
-            session["user_mobile"] = (
-                user["mobile"]
-            )
-
-
-            return redirect(
-                url_for(
-                    "applicant_home"
-                )
-            )
-
-
-        return render_template(
-            "login.html",
-            error="Invalid email or password."
-        )
-
+        return redirect(url_for("applicant_home"))
 
     return render_template(
-        "login.html"
+        "login.html",
+        error="Invalid email or password.",
     )
 
 
@@ -1762,1013 +1190,431 @@ def login():
 # APPLICANT DASHBOARD
 # ==================================================
 
-@app.route(
-    "/applicant-home"
-)
+@app.route("/applicant-home")
 def applicant_home():
+    if not applicant_login_required():
+        return redirect(url_for("login"))
 
-    if "user_id" not in session:
+    user = get_current_user()
+    application = application_exists_for_user(user["id"])
 
-        return redirect(
-            url_for(
-                "login"
-            )
-        )
-
-
-    connection = get_db_connection()
-
-
-    try:
-
-        application = connection.execute(
-            """
-            SELECT *
-            FROM applications
-            WHERE user_id = %s
-            LIMIT 1
-            """,
-            (
-                session["user_id"],
-            )
-        ).fetchone()
-
-    finally:
-
-        connection.close()
-
+    if application:
+        application = get_application_by_id(application["id"])
 
     return render_template(
         "applicant_home.html",
-        application=application
+        application=application,
     )
 
 
 # ==================================================
 # JOB APPLICATION
-# ONE APPLICANT = ONE APPLICATION
 # ==================================================
 
-@app.route(
-    "/apply",
-    methods=["GET", "POST"]
-)
+@app.route("/apply", methods=["GET", "POST"])
 def apply():
+    if not applicant_login_required():
+        return redirect(url_for("login"))
 
-    if "user_id" not in session:
+    user = get_current_user()
 
-        return redirect(
-            url_for(
-                "login"
+    existing_application = application_exists_for_user(user["id"])
+
+    if existing_application:
+        safe_position = html.escape(
+            str(
+                get_application_by_id(existing_application["id"])["position"]
             )
         )
 
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Application Already Submitted</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background: #fff7f2;
+                    text-align: center;
+                    padding-top: 100px;
+                }}
+                .box {{
+                    background: white;
+                    width: 500px;
+                    max-width: 90%;
+                    margin: auto;
+                    padding: 40px;
+                    border-radius: 14px;
+                    box-shadow: 0 10px 35px rgba(0,0,0,0.08);
+                }}
+                h2 {{ color: #ff4b00; margin-bottom: 20px; }}
+                p {{ color: #555; margin-bottom: 15px; }}
+                a {{
+                    display: inline-block;
+                    background: #ff4b00;
+                    color: white;
+                    text-decoration: none;
+                    padding: 12px 20px;
+                    border-radius: 7px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="box">
+                <h2>Application Already Submitted</h2>
+                <p>You have already applied for:</p>
+                <p><strong>{safe_position}</strong></p>
+                <p>One applicant can submit only one application.</p>
+                <a href="/my-application">View My Application</a>
+            </div>
+        </body>
+        </html>
+        """
+
+    if request.method == "GET":
+        return render_template("apply.html")
+
+    position = request.form.get("position", "").strip()
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    mobile = request.form.get("mobile", "").strip()
+    dob = request.form.get("dob", "").strip()
+    gender = request.form.get("gender", "").strip()
+    qualification = request.form.get("qualification", "").strip()
+    college_name = request.form.get("college_name", "").strip()
+    university_name = request.form.get("university_name", "").strip()
+    branch = request.form.get("branch", "").strip()
+    graduation_year = request.form.get("graduation_year", "").strip()
+    candidate_type = request.form.get("candidate_type", "Fresher").strip()
+    experience = request.form.get("experience", "").strip()
+    skills = request.form.get("skills", "").strip()
+    address = request.form.get("address", "").strip()
+
+    required_fields = {
+        "position": position,
+        "name": name,
+        "email": email,
+        "mobile": mobile,
+        "dob": dob,
+        "gender": gender,
+        "qualification": qualification,
+        "college_name": college_name,
+        "university_name": university_name,
+        "branch": branch,
+        "graduation_year": graduation_year,
+        "candidate_type": candidate_type,
+        "skills": skills,
+        "address": address,
+    }
+
+    for field_name, field_value in required_fields.items():
+        if not field_value:
+            return render_template(
+                "apply.html",
+                error=(
+                    field_name.replace("_", " ").title()
+                    + " is required."
+                ),
+            )
+
+    resume = request.files.get("resume")
+    saved_resume_filename = None
+    resume_path = None
 
     connection = get_db_connection()
 
-
     try:
-
-        # ------------------------------------------
-        # Current user
-        # ------------------------------------------
-
-        user = connection.execute(
+        current_user = connection.execute(
             """
             SELECT *
             FROM users
             WHERE id = %s
             """,
-            (
-                session["user_id"],
-            )
+            (session["user_id"],),
         ).fetchone()
 
-
-        if not user:
-
+        if not current_user:
             session.clear()
+            return redirect(url_for("login"))
 
-            return redirect(
-                url_for(
-                    "login"
-                )
-            )
-
-
-        # ------------------------------------------
-        # Verified email required
-        # ------------------------------------------
-
-        if user["email_verified"] != 1:
-
+        if int(current_user.get("email_verified", 0) or 0) != 1:
             return render_template(
                 "login.html",
-                error=(
-                    "Please verify your email "
-                    "before applying."
-                )
+                error="Please verify your email before applying.",
             )
-
-
-        # ------------------------------------------
-        # Existing application
-        # ------------------------------------------
 
         existing_application = connection.execute(
             """
-            SELECT id, position
+            SELECT id
             FROM applications
             WHERE user_id = %s
             LIMIT 1
             """,
-            (
-                session["user_id"],
-            )
+            (session["user_id"],),
         ).fetchone()
 
+        if existing_application:
+            return redirect(url_for("my_application"))
 
-    finally:
+        existing_email_application = connection.execute(
+            """
+            SELECT id
+            FROM applications
+            WHERE LOWER(email) = LOWER(%s)
+            LIMIT 1
+            """,
+            (email,),
+        ).fetchone()
 
-        connection.close()
-
-
-    if existing_application:
-
-        safe_position = html.escape(
-            str(
-                existing_application["position"]
+        if existing_email_application:
+            return render_template(
+                "apply.html",
+                error=(
+                    "This email has already been used to submit an application."
+                ),
             )
-        )
 
+        existing_mobile_application = connection.execute(
+            """
+            SELECT id
+            FROM applications
+            WHERE mobile = %s
+            LIMIT 1
+            """,
+            (mobile,),
+        ).fetchone()
 
-        return f"""
-        <!DOCTYPE html>
+        if existing_mobile_application:
+            return render_template(
+                "apply.html",
+                error=(
+                    "This mobile number has already been used to submit an application."
+                ),
+            )
 
-        <html>
-
-        <head>
-
-            <title>
-                Application Already Submitted
-            </title>
-
-            <style>
-
-                body {{
-                    font-family:Arial,sans-serif;
-                    background:#fff7f2;
-                    text-align:center;
-                    padding-top:100px;
-                }}
-
-                .box {{
-                    background:white;
-                    width:500px;
-                    max-width:90%;
-                    margin:auto;
-                    padding:40px;
-                    border-radius:14px;
-                    box-shadow:
-                        0 10px 35px
-                        rgba(0,0,0,0.08);
-                }}
-
-                h2 {{
-                    color:#ff4b00;
-                    margin-bottom:20px;
-                }}
-
-                p {{
-                    color:#555;
-                    margin-bottom:15px;
-                }}
-
-                a {{
-                    display:inline-block;
-                    background:#ff4b00;
-                    color:white;
-                    text-decoration:none;
-                    padding:12px 20px;
-                    border-radius:7px;
-                }}
-
-            </style>
-
-        </head>
-
-        <body>
-
-            <div class="box">
-
-                <h2>
-                    Application Already Submitted
-                </h2>
-
-                <p>
-                    You have already applied for:
-                </p>
-
-                <p>
-                    <strong>
-                        {safe_position}
-                    </strong>
-                </p>
-
-                <p>
-                    One applicant can submit only one application.
-                </p>
-
-                <a href="/my-application">
-                    View My Application
-                </a>
-
-            </div>
-
-        </body>
-
-        </html>
-        """
-
-
-    # ==================================================
-    # PROCESS APPLICATION
-    # ==================================================
-
-    if request.method == "POST":
-
-        position = request.form.get(
-            "position",
-            ""
-        ).strip()
-
-        name = request.form.get(
-            "name",
-            ""
-        ).strip()
-
-        email = request.form.get(
-            "email",
-            ""
-        ).strip().lower()
-
-        mobile = request.form.get(
-            "mobile",
-            ""
-        ).strip()
-
-        dob = request.form.get(
-            "dob",
-            ""
-        ).strip()
-
-        gender = request.form.get(
-            "gender",
-            ""
-        ).strip()
-
-        qualification = request.form.get(
-            "qualification",
-            ""
-        ).strip()
-
-        college_name = request.form.get(
-            "college_name",
-            ""
-        ).strip()
-
-        university_name = request.form.get(
-            "university_name",
-            ""
-        ).strip()
-
-        branch = request.form.get(
-            "branch",
-            ""
-        ).strip()
-
-        graduation_year = request.form.get(
-            "graduation_year",
-            ""
-        ).strip()
-
-        candidate_type = request.form.get(
-            "candidate_type",
-            "Fresher"
-        ).strip()
-
-        experience = request.form.get(
-            "experience",
-            ""
-        ).strip()
-
-        skills = request.form.get(
-            "skills",
-            ""
-        ).strip()
-
-        address = request.form.get(
-            "address",
-            ""
-        ).strip()
-
-
-        # ------------------------------------------
-        # Required fields
-        # ------------------------------------------
-
-        required_fields = {
-
-            "position": position,
-
-            "name": name,
-
-            "email": email,
-
-            "mobile": mobile,
-
-            "dob": dob,
-
-            "gender": gender,
-
-            "qualification": qualification,
-
-            "college_name": college_name,
-
-            "university_name": university_name,
-
-            "branch": branch,
-
-            "graduation_year": graduation_year,
-
-            "candidate_type": candidate_type,
-
-            "skills": skills,
-
-            "address": address
-
-        }
-
-
-        for field_name, field_value in required_fields.items():
-
-            if not field_value:
-
+        if resume and resume.filename:
+            if not allowed_file(resume.filename):
                 return render_template(
                     "apply.html",
                     error=(
-                        field_name
-                        .replace(
-                            "_",
-                            " "
-                        )
-                        .title()
-                        + " is required."
-                    )
+                        "Invalid resume format. Only PDF, DOC and DOCX files are allowed."
+                    ),
                 )
 
+            original_filename = secure_filename(resume.filename)
 
-        connection = get_db_connection()
-
-
-        try:
-
-            # --------------------------------------
-            # Verify user
-            # --------------------------------------
-
-            user = connection.execute(
-                """
-                SELECT *
-                FROM users
-                WHERE id = %s
-                """,
-                (
-                    session["user_id"],
-                )
-            ).fetchone()
-
-
-            if not user:
-
-                session.clear()
-
-                return redirect(
-                    url_for(
-                        "login"
-                    )
-                )
-
-
-            if user["email_verified"] != 1:
-
-                return render_template(
-                    "login.html",
-                    error=(
-                        "Please verify your email "
-                        "before applying."
-                    )
-                )
-
-
-            # --------------------------------------
-            # One application per account
-            # --------------------------------------
-
-            existing_application = connection.execute(
-                """
-                SELECT id
-                FROM applications
-                WHERE user_id = %s
-                LIMIT 1
-                """,
-                (
-                    session["user_id"],
-                )
-            ).fetchone()
-
-
-            if existing_application:
-
-                return redirect(
-                    url_for(
-                        "my_application"
-                    )
-                )
-
-
-            # --------------------------------------
-            # Email already used
-            # --------------------------------------
-
-            existing_email_application = connection.execute(
-                """
-                SELECT id
-                FROM applications
-                WHERE LOWER(email) = LOWER(%s)
-                LIMIT 1
-                """,
-                (
-                    email,
-                )
-            ).fetchone()
-
-
-            if existing_email_application:
-
+            if not original_filename:
                 return render_template(
                     "apply.html",
-                    error=(
-                        "This email has already been used "
-                        "to submit an application."
-                    )
+                    error="Invalid resume filename.",
                 )
 
+            base_name, extension = os.path.splitext(original_filename)
 
-            # --------------------------------------
-            # Mobile already used
-            # --------------------------------------
-
-            existing_mobile_application = connection.execute(
-                """
-                SELECT id
-                FROM applications
-                WHERE mobile = %s
-                LIMIT 1
-                """,
-                (
-                    mobile,
-                )
-            ).fetchone()
-
-
-            if existing_mobile_application:
-
-                return render_template(
-                    "apply.html",
-                    error=(
-                        "This mobile number has already "
-                        "been used to submit an application."
-                    )
-                )
-
-
-            # --------------------------------------
-            # Resume
-            # --------------------------------------
-
-            resume = request.files.get(
-                "resume"
+            saved_resume_filename = (
+                f"{session['user_id']}_{base_name}{extension}"
             )
 
-            resume_filename = None
-
-
-            if resume and resume.filename:
-
-                if not allowed_file(
-                    resume.filename
-                ):
-
-                    return render_template(
-                        "apply.html",
-                        error=(
-                            "Invalid resume format. "
-                            "Only PDF, DOC and DOCX files "
-                            "are allowed."
-                        )
-                    )
-
-
-                original_filename = secure_filename(
-                    resume.filename
-                )
-
-
-                if not original_filename:
-
-                    return render_template(
-                        "apply.html",
-                        error=(
-                            "Invalid resume filename."
-                        )
-                    )
-
-
-                base_name, extension = os.path.splitext(
-                    original_filename
-                )
-
-
-                resume_filename = (
-                    f"{session['user_id']}_"
-                    f"{base_name}"
-                    f"{extension}"
-                )
-
-
-                resume_path = os.path.join(
-                    app.config["UPLOAD_FOLDER"],
-                    resume_filename
-                )
-
-
-                resume.save(
-                    resume_path
-                )
-
-
-            # --------------------------------------
-            # Insert application
-            #
-            # PostgreSQL RETURNING is used instead
-            # of SQLite last_insert_rowid().
-            # --------------------------------------
-
-            result = connection.execute(
-                """
-                INSERT INTO applications (
-
-                    user_id,
-                    position,
-                    name,
-                    email,
-                    mobile,
-                    dob,
-                    gender,
-                    qualification,
-                    college_name,
-                    university_name,
-                    branch,
-                    graduation_year,
-                    candidate_type,
-                    experience,
-                    skills,
-                    address,
-                    resume_filename
-
-                )
-                VALUES (
-
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s
-
-                )
-
-                RETURNING id
-                """,
-                (
-                    session["user_id"],
-                    position,
-                    name,
-                    email,
-                    mobile,
-                    dob,
-                    gender,
-                    qualification,
-                    college_name,
-                    university_name,
-                    branch,
-                    graduation_year,
-                    candidate_type,
-                    experience,
-                    skills,
-                    address,
-                    resume_filename
-                )
+            resume_path = os.path.join(
+                UPLOAD_FOLDER,
+                saved_resume_filename,
             )
 
+            resume.save(resume_path)
 
-            inserted_row = result.fetchone()
+        inserted_row = connection.execute(
+            """
+            INSERT INTO applications (
+                user_id,
+                position,
+                name,
+                email,
+                mobile,
+                dob,
+                gender,
+                qualification,
+                college_name,
+                university_name,
+                branch,
+                graduation_year,
+                candidate_type,
+                experience,
+                skills,
+                address,
+                resume_filename,
+                status
+            )
+            VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s, 'Submitted'
+            )
+            RETURNING id
+            """,
+            (
+                session["user_id"],
+                position,
+                name,
+                email,
+                mobile,
+                dob,
+                gender,
+                qualification,
+                college_name,
+                university_name,
+                branch,
+                graduation_year,
+                candidate_type,
+                experience,
+                skills,
+                address,
+                saved_resume_filename,
+            ),
+        ).fetchone()
 
-            result.close()
+        application_id = inserted_row["id"]
+        connection.commit()
 
+    except Exception:
+        connection.rollback()
 
-            application_id = inserted_row[
-                "id"
-            ]
-
-
-            connection.commit()
-
-
-        except Exception:
-
-            connection.rollback()
-
-            connection.close()
-
-
-            if resume_filename:
-
-                resume_path = os.path.join(
-                    app.config["UPLOAD_FOLDER"],
-                    resume_filename
-                )
-
-
-                if os.path.isfile(
-                    resume_path
-                ):
-
-                    try:
-
-                        os.remove(
-                            resume_path
-                        )
-
-                    except OSError:
-
-                        pass
-
-
-            raise
-
-
-        finally:
-
+        if resume_path and os.path.isfile(resume_path):
             try:
-                connection.close()
-            except Exception:
+                os.remove(resume_path)
+            except OSError:
                 pass
 
-
-        # ------------------------------------------
-        # Get saved application
-        # ------------------------------------------
-
-        connection = get_db_connection()
-
-
-        try:
-
-            application = connection.execute(
-                """
-                SELECT *
-                FROM applications
-                WHERE id = %s
-                """,
-                (
-                    application_id,
-                )
-            ).fetchone()
-
-        finally:
-
-            connection.close()
-
-
-        # ------------------------------------------
-        # Create PDF
-        # ------------------------------------------
-
-        pdf_path = create_application_pdf(
-            application
-        )
-
-
-        # ------------------------------------------
-        # Send confirmation email
-        # ------------------------------------------
-
-        email_sent = True
-
-
-        try:
-
-            send_application_success_email(
-                application,
-                pdf_path
-            )
-
-        except Exception as error:
-
-            email_sent = False
-
-            print(
-                "Application success email error:",
-                error
-            )
-
-
-        if email_sent:
-
-            email_message = """
-            <p>
-                A confirmation email containing your
-                application PDF has been sent to your
-                registered email address.
-            </p>
-            """
-
-        else:
-
-            email_message = """
-            <p style="color:#b00020;">
-                Your application was saved successfully,
-                but the confirmation email could not be sent.
-                Please download the application PDF from
-                your dashboard.
-            </p>
-            """
-
-
-        # ------------------------------------------
-        # Success page
-        # ------------------------------------------
-
-        safe_name = html.escape(
-            str(
-                application["name"]
-            )
-        )
-
-        safe_address = html.escape(
-            str(
-                WALKIN_OFFICE_ADDRESS
-            )
-        )
-
-        safe_date = html.escape(
-            str(
-                WALKIN_DATE
-            )
-        )
-
-        safe_time = html.escape(
-            str(
-                WALKIN_TIME
-            )
-        )
-
-        safe_contact = html.escape(
-            str(
-                WALKIN_CONTACT
-            )
-        )
-
-
-        return f"""
-        <!DOCTYPE html>
-
-        <html>
-
-        <head>
-
-            <title>
-                Trekso | Application Submitted
-            </title>
-
-            <style>
-
-                body {{
-                    font-family:Arial,sans-serif;
-                    background:#fff7f2;
-                    text-align:center;
-                    padding-top:70px;
-                }}
-
-                .box {{
-                    background:white;
-                    width:580px;
-                    max-width:92%;
-                    margin:auto;
-                    padding:45px;
-                    border-radius:14px;
-                    box-shadow:
-                        0 10px 35px
-                        rgba(0,0,0,0.08);
-                }}
-
-                h2 {{
-                    color:#ff4b00;
-                    margin-bottom:20px;
-                }}
-
-                p {{
-                    color:#555;
-                    margin-bottom:16px;
-                    line-height:1.6;
-                }}
-
-                .application-id {{
-                    font-size:20px;
-                    font-weight:bold;
-                    color:#111;
-                    margin:20px 0;
-                }}
-
-                .walkin {{
-                    background:#fff7f2;
-                    padding:20px;
-                    border-radius:10px;
-                    margin:25px 0;
-                    text-align:left;
-                }}
-
-                .walkin h3 {{
-                    color:#ff4b00;
-                    margin-top:0;
-                }}
-
-                a {{
-                    display:inline-block;
-                    background:#ff4b00;
-                    color:white;
-                    text-decoration:none;
-                    padding:12px 22px;
-                    border-radius:7px;
-                    font-weight:bold;
-                }}
-
-            </style>
-
-        </head>
-
-        <body>
-
-            <div class="box">
-
-                <h2>
-                    Application Submitted Successfully!
-                </h2>
-
-                <p>
-                    Dear {safe_name},
-                </p>
-
-                <p>
-                    Your Trekso job application has been
-                    successfully submitted.
-                </p>
-
-                <div class="application-id">
-                    Application ID:
-                    #{application["id"]}
-                </div>
-
-                {email_message}
-
-                <div class="walkin">
-
-                    <h3>
-                        Walk-in Interview
-                    </h3>
-
-                    <p>
-                        <strong>
-                            Office Address:
-                        </strong>
-                        <br>
-                        {safe_address}
-                    </p>
-
-                    <p>
-                        <strong>
-                            Date:
-                        </strong>
-                        <br>
-                        {safe_date}
-                    </p>
-
-                    <p>
-                        <strong>
-                            Time:
-                        </strong>
-                        <br>
-                        {safe_time}
-                    </p>
-
-                    <p>
-                        <strong>
-                            Contact:
-                        </strong>
-                        <br>
-                        {safe_contact}
-                    </p>
-
-                    <p>
-                        Please carry your application PDF
-                        and resume when attending the interview.
-                    </p>
-
-                </div>
-
-                <a href="/applicant-home">
-                    Go to Dashboard
-                </a>
-
-            </div>
-
-        </body>
-
-        </html>
-        """
-
-
-    return render_template(
-        "apply.html"
+        app.logger.exception("Application submission database error.")
+        return render_template(
+            "apply.html",
+            error="Unable to submit your application right now. Please try again.",
+        ), 500
+
+    finally:
+        connection.close()
+
+    application = get_application_by_id(application_id)
+
+    try:
+        pdf_path = create_application_pdf(application)
+    except Exception:
+        app.logger.exception("Application PDF generation failed.")
+        return render_template(
+            "error.html",
+            error="Application was saved, but the application PDF could not be generated.",
+        ), 500
+
+    email_sent = send_application_success_email(
+        application,
+        pdf_path,
     )
+
+    email_message = (
+        "<p>A confirmation email containing your application PDF has been sent to your registered email address.</p>"
+        if email_sent
+        else
+        "<p style=\"color:#b00020;\">Your application was saved successfully, but the confirmation email could not be sent. Please download the application PDF from your dashboard.</p>"
+    )
+
+    safe_name = html.escape(str(application["name"]))
+    safe_address = html.escape(str(WALKIN_OFFICE_ADDRESS))
+    safe_date = html.escape(str(WALKIN_DATE))
+    safe_time = html.escape(str(WALKIN_TIME))
+    safe_contact = html.escape(str(WALKIN_CONTACT))
+
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Trekso | Application Submitted</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                background: #fff7f2;
+                text-align: center;
+                padding-top: 70px;
+            }}
+            .box {{
+                background: white;
+                width: 580px;
+                max-width: 92%;
+                margin: auto;
+                padding: 45px;
+                border-radius: 14px;
+                box-shadow: 0 10px 35px rgba(0,0,0,0.08);
+            }}
+            h2 {{ color: #ff4b00; margin-bottom: 20px; }}
+            p {{ color: #555; margin-bottom: 16px; line-height: 1.6; }}
+            .application-id {{
+                font-size: 20px;
+                font-weight: bold;
+                color: #111;
+                margin: 20px 0;
+            }}
+            .walkin {{
+                background: #fff7f2;
+                padding: 20px;
+                border-radius: 10px;
+                margin: 25px 0;
+                text-align: left;
+            }}
+            .walkin h3 {{ color: #ff4b00; margin-top: 0; }}
+            a {{
+                display: inline-block;
+                background: #ff4b00;
+                color: white;
+                text-decoration: none;
+                padding: 12px 22px;
+                border-radius: 7px;
+                font-weight: bold;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="box">
+            <h2>Application Submitted Successfully!</h2>
+            <p>Dear {safe_name},</p>
+            <p>Your Trekso job application has been successfully submitted.</p>
+            <div class="application-id">Application ID: #{application['id']}</div>
+            {email_message}
+            <div class="walkin">
+                <h3>Walk-in Interview</h3>
+                <p><strong>Office Address:</strong><br>{safe_address}</p>
+                <p><strong>Date:</strong><br>{safe_date}</p>
+                <p><strong>Time:</strong><br>{safe_time}</p>
+                <p><strong>Contact:</strong><br>{safe_contact}</p>
+                <p>Please carry your application PDF and resume when attending the interview.</p>
+            </div>
+            <a href="/applicant-home">Go to Dashboard</a>
+        </div>
+    </body>
+    </html>
+    """
 
 
 # ==================================================
 # VIEW MY APPLICATION
 # ==================================================
 
-@app.route(
-    "/my-application"
-)
+@app.route("/my-application")
 def my_application():
+    if not applicant_login_required():
+        return redirect(url_for("login"))
 
-    if "user_id" not in session:
+    user = get_current_user()
+    application_ref = application_exists_for_user(user["id"])
 
-        return redirect(
-            url_for(
-                "login"
-            )
+    if not application_ref:
+        return render_template(
+            "my_application.html",
+            application=None,
         )
 
-
-    connection = get_db_connection()
-
-
-    try:
-
-        application = connection.execute(
-            """
-            SELECT *
-            FROM applications
-            WHERE user_id = %s
-            LIMIT 1
-            """,
-            (
-                session["user_id"],
-            )
-        ).fetchone()
-
-    finally:
-
-        connection.close()
-
+    application = get_application_by_id(application_ref["id"])
 
     return render_template(
         "my_application.html",
-        application=application
+        application=application,
     )
 
 
@@ -2776,219 +1622,119 @@ def my_application():
 # APPLICANT DOWNLOAD RESUME
 # ==================================================
 
-@app.route(
-    "/download-resume/<int:application_id>"
-)
-def download_resume(
-    application_id
-):
+@app.route("/download/resume/<int:application_id>")
+def download_resume(application_id):
+    if not applicant_login_required():
+        return redirect(url_for("login"))
 
-    if "user_id" not in session:
-
-        return redirect(
-            url_for(
-                "login"
-            )
-        )
-
-
-    connection = get_db_connection()
-
-
-    try:
-
-        application = connection.execute(
-            """
-            SELECT *
-            FROM applications
-            WHERE id = %s
-            AND user_id = %s
-            """,
-            (
-                application_id,
-                session["user_id"]
-            )
-        ).fetchone()
-
-    finally:
-
-        connection.close()
-
+    application = get_application_by_id(application_id)
 
     if not application:
+        return "Application not found.", 404
 
-        return (
-            "Application not found or access denied.",
-            404
-        )
+    if application["user_id"] != session["user_id"]:
+        return "Access denied.", 403
 
-
-    resume_filename = (
-        application["resume_filename"]
-    )
-
+    resume_filename = application.get("resume_filename")
 
     if not resume_filename:
-
-        return (
-            "No resume was uploaded.",
-            404
-        )
-
+        return "No resume was uploaded.", 404
 
     resume_path = os.path.join(
-        app.config["UPLOAD_FOLDER"],
-        resume_filename
+        UPLOAD_FOLDER,
+        resume_filename,
     )
 
-
-    if not os.path.isfile(
-        resume_path
-    ):
-
-        return (
-            "Resume file not found.",
-            404
-        )
-
+    if not os.path.isfile(resume_path):
+        return "Resume file not found.", 404
 
     return send_from_directory(
-        app.config["UPLOAD_FOLDER"],
+        UPLOAD_FOLDER,
         resume_filename,
-        as_attachment=True
+        as_attachment=True,
     )
+
+
+@app.route("/download-resume/<int:application_id>")
+def download_resume_legacy(application_id):
+    return download_resume(application_id)
 
 
 # ==================================================
 # DOWNLOAD APPLICATION PDF
 # ==================================================
 
-@app.route(
-    "/download-application"
-)
-def download_application():
+@app.route("/download/application/<int:application_id>")
+def download_application(application_id):
+    if not applicant_login_required():
+        return redirect(url_for("login"))
 
-    if "user_id" not in session:
-
-        return redirect(
-            url_for(
-                "login"
-            )
-        )
-
-
-    connection = get_db_connection()
-
-
-    try:
-
-        application = connection.execute(
-            """
-            SELECT *
-            FROM applications
-            WHERE user_id = %s
-            LIMIT 1
-            """,
-            (
-                session["user_id"],
-            )
-        ).fetchone()
-
-    finally:
-
-        connection.close()
-
+    application = get_application_by_id(application_id)
 
     if not application:
+        return "Application not found.", 404
 
-        return (
-            "No application found.",
-            404
-        )
+    if application["user_id"] != session["user_id"]:
+        return "Access denied.", 403
 
+    pdf_path = application_pdf_path(application_id)
 
-    pdf_path = create_application_pdf(
-        application
-    )
-
+    if not os.path.isfile(pdf_path):
+        pdf_path = create_application_pdf(application)
 
     return send_file(
         pdf_path,
         as_attachment=True,
         download_name=(
-            "Trekso_Application_"
-            + str(application["id"])
-            + ".pdf"
-        )
+            f"Trekso_Application_{application_id}.pdf"
+        ),
     )
+
+
+@app.route("/download-application/<int:application_id>")
+def download_application_legacy(application_id):
+    return download_application(application_id)
+
+
+@app.route("/download-application")
+def download_my_application():
+    if not applicant_login_required():
+        return redirect(url_for("login"))
+
+    application_ref = application_exists_for_user(session["user_id"])
+
+    if not application_ref:
+        return "No application found.", 404
+
+    return download_application(application_ref["id"])
 
 
 # ==================================================
 # ADMIN LOGIN
 # ==================================================
 
-@app.route(
-    "/admin-login",
-    methods=["GET", "POST"]
-)
+@app.route("/admin", methods=["GET", "POST"])
+def admin():
+    return redirect(url_for("admin_login"))
+
+
+@app.route("/admin-login", methods=["GET", "POST"])
 def admin_login():
+    if request.method == "GET":
+        return render_template("admin_login.html")
 
-    ADMIN_USERNAME = os.environ.get(
-        "ADMIN_USERNAME",
-        "admin"
-    )
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "")
 
-    ADMIN_PASSWORD = os.environ.get(
-        "ADMIN_PASSWORD",
-        "trekso1245"
-    )
-
-
-    if request.method == "POST":
-
-        username = request.form.get(
-            "username",
-            ""
-        ).strip()
-
-        password = request.form.get(
-            "password",
-            ""
-        )
-
-
-        if (
-            username == ADMIN_USERNAME
-            and password == ADMIN_PASSWORD
-        ):
-
-            session.clear()
-
-            session.permanent = True
-
-            session[
-                "admin_logged_in"
-            ] = True
-
-
-            return redirect(
-                url_for(
-                    "admin_dashboard"
-                )
-            )
-
-
-        return render_template(
-            "admin_login.html",
-            error=(
-                "Invalid admin username "
-                "or password."
-            )
-        )
-
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        session.clear()
+        session.permanent = True
+        session["admin_logged_in"] = True
+        return redirect(url_for("admin_dashboard"))
 
     return render_template(
-        "admin_login.html"
+        "admin_login.html",
+        error="Invalid admin username or password.",
     )
 
 
@@ -2998,7 +1744,7 @@ def admin_login():
 
 @app.route("/admin-dashboard")
 def admin_dashboard():
-    if not session.get("admin_logged_in"):
+    if not admin_logged_in():
         return redirect(url_for("admin_login"))
 
     search = request.args.get("search", "").strip()
@@ -3057,10 +1803,13 @@ def admin_dashboard():
         query = """
             SELECT
                 id,
+                user_id,
                 position,
                 name,
                 email,
                 mobile,
+                dob,
+                gender,
                 qualification,
                 college_name,
                 university_name,
@@ -3105,166 +1854,88 @@ def admin_dashboard():
 
         applications = connection.execute(
             query,
-            tuple(params)
+            tuple(params),
         ).fetchall()
 
-    except Exception:
-        app.logger.exception("Admin dashboard error")
+        return render_template(
+            "admin_dashboard.html",
+            applications=applications,
+            total_count=total_count,
+            submitted_count=submitted_count,
+            under_review_count=under_review_count,
+            shortlisted_count=shortlisted_count,
+            selected_count=selected_count,
+            rejected_count=rejected_count,
+            application_statuses=APPLICATION_STATUSES,
+            search=search,
+            status_filter=status_filter,
+        )
 
+    except Exception:
+        app.logger.exception("Admin dashboard error.")
         return render_template(
             "error.html",
-            error="Unable to load admin dashboard."
+            error="Unable to load admin dashboard.",
         ), 500
 
     finally:
         connection.close()
 
-    return render_template(
-        "admin_dashboard.html",
-        applications=applications,
-        total_count=total_count,
-        submitted_count=submitted_count,
-        under_review_count=under_review_count,
-        shortlisted_count=shortlisted_count,
-        selected_count=selected_count,
-        rejected_count=rejected_count,
-        application_statuses=APPLICATION_STATUSES,
-        search=search,
-        status_filter=status_filter,
-    )
+
 # ==================================================
 # ADMIN VIEW APPLICATION
 # ==================================================
 
-@app.route(
-    "/admin-application/<int:application_id>"
-)
-def admin_view_application(
-    application_id
-):
+@app.route("/admin-application/<int:application_id>")
+def admin_view_application(application_id):
+    if not admin_logged_in():
+        return redirect(url_for("admin_login"))
 
-    if not session.get(
-        "admin_logged_in"
-    ):
-
-        return redirect(
-            url_for(
-                "admin_login"
-            )
-        )
-
-
-    connection = get_db_connection()
-
-
-    try:
-
-        application = connection.execute(
-            """
-            SELECT *
-            FROM applications
-            WHERE id = %s
-            """,
-            (
-                application_id,
-            )
-        ).fetchone()
-
-    finally:
-
-        connection.close()
-
+    application = get_application_by_id(application_id)
 
     if not application:
-
-        return (
-            "Application not found.",
-            404
-        )
-
+        return "Application not found.", 404
 
     return render_template(
         "admin_application.html",
-        application=application
+        application=application,
     )
+
+
+# Compatibility alias.
+@app.route("/admin/application/<int:application_id>")
+def admin_view_application_legacy(application_id):
+    return admin_view_application(application_id)
 
 
 # ==================================================
 # ADMIN UPDATE STATUS
 # ==================================================
 
-@app.route(
-    "/admin-update-status/<int:application_id>",
-    methods=["POST"]
-)
-def update_application_status(
-    application_id
-):
+@app.route("/admin-update-status/<int:application_id>", methods=["POST"])
+def update_application_status(application_id):
+    if not admin_logged_in():
+        return redirect(url_for("admin_login"))
 
-    if not session.get(
-        "admin_logged_in"
-    ):
+    new_status = request.form.get("status", "").strip()
 
-        return redirect(
-            url_for(
-                "admin_login"
-            )
-        )
-
-
-    new_status = request.form.get(
-        "status",
-        ""
-    ).strip()
-
-
-    allowed_statuses = {
-
-        "Submitted",
-
-        "Under Review",
-
-        "Shortlisted",
-
-        "Selected",
-
-        "Rejected"
-
-    }
-
-
-    if new_status not in allowed_statuses:
-
-        return (
-            "Invalid application status.",
-            400
-        )
-
+    if new_status not in APPLICATION_STATUSES:
+        return "Invalid application status.", 400
 
     connection = get_db_connection()
 
-
     try:
-
         application = connection.execute(
             """
             SELECT id
             FROM applications
             WHERE id = %s
             """,
-            (
-                application_id,
-            )
+            (application_id,),
         ).fetchone()
 
-
         if not application:
-
-            return (
-                "Application not found.",
-                404
-            )
-
+            return "Application not found.", 404
 
         connection.execute(
             """
@@ -3272,261 +1943,187 @@ def update_application_status(
             SET status = %s
             WHERE id = %s
             """,
-            (
-                new_status,
-                application_id
-            )
+            (new_status, application_id),
         ).close()
-
 
         connection.commit()
 
-
     except Exception:
-
         connection.rollback()
-
-        raise
-
+        app.logger.exception("Application status update failed.")
+        return "Unable to update application status.", 500
 
     finally:
-
         connection.close()
-
 
     return redirect(
         url_for(
             "admin_view_application",
-            application_id=application_id
+            application_id=application_id,
         )
     )
+
+
+@app.route("/admin/application/<int:application_id>/status", methods=["POST"])
+def update_application_status_legacy(application_id):
+    return update_application_status(application_id)
 
 
 # ==================================================
 # ADMIN DELETE APPLICATION
 # ==================================================
 
-@app.route(
-    "/admin-delete-application/<int:application_id>",
-    methods=["POST"]
-)
-def admin_delete_application(
-    application_id
-):
-
-    if not session.get(
-        "admin_logged_in"
-    ):
-
-        return redirect(
-            url_for(
-                "admin_login"
-            )
-        )
-
+@app.route("/admin-delete-application/<int:application_id>", methods=["POST"])
+def admin_delete_application(application_id):
+    if not admin_logged_in():
+        return redirect(url_for("admin_login"))
 
     connection = get_db_connection()
-
+    resume_filename = None
 
     try:
-
         application = connection.execute(
             """
             SELECT id, resume_filename
             FROM applications
             WHERE id = %s
             """,
-            (
-                application_id,
-            )
+            (application_id,),
         ).fetchone()
 
-
         if not application:
+            return "Application not found.", 404
 
-            return (
-                "Application not found.",
-                404
-            )
-
-
-        resume_filename = (
-            application["resume_filename"]
-        )
-
+        resume_filename = application.get("resume_filename")
 
         connection.execute(
             """
             DELETE FROM applications
             WHERE id = %s
             """,
-            (
-                application_id,
-            )
+            (application_id,),
         ).close()
-
 
         connection.commit()
 
-
     except Exception:
-
         connection.rollback()
-
-        raise
-
+        app.logger.exception("Application deletion failed.")
+        return "Unable to delete application.", 500
 
     finally:
-
         connection.close()
 
-
-    # ------------------------------------------
-    # Delete local resume
-    # ------------------------------------------
-
     if resume_filename:
-
         resume_path = os.path.join(
-            app.config["UPLOAD_FOLDER"],
-            resume_filename
+            UPLOAD_FOLDER,
+            resume_filename,
         )
 
-
-        if os.path.isfile(
-            resume_path
-        ):
-
+        if os.path.isfile(resume_path):
             try:
-
-                os.remove(
-                    resume_path
-                )
-
+                os.remove(resume_path)
             except OSError:
-
                 pass
 
+    pdf_path = application_pdf_path(application_id)
 
-    return redirect(
-        url_for(
-            "admin_dashboard"
-        )
-    )
+    if os.path.isfile(pdf_path):
+        try:
+            os.remove(pdf_path)
+        except OSError:
+            pass
+
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/application/<int:application_id>/delete", methods=["POST"])
+def admin_delete_application_legacy(application_id):
+    return admin_delete_application(application_id)
 
 
 # ==================================================
 # ADMIN DOWNLOAD RESUME
 # ==================================================
 
-@app.route(
-    "/admin-download-resume/<int:application_id>"
-)
-def admin_download_resume(
-    application_id
-):
+@app.route("/admin-download-resume/<int:application_id>")
+def admin_download_resume(application_id):
+    if not admin_logged_in():
+        return redirect(url_for("admin_login"))
 
-    if not session.get(
-        "admin_logged_in"
-    ):
-
-        return redirect(
-            url_for(
-                "admin_login"
-            )
-        )
-
-
-    connection = get_db_connection()
-
-
-    try:
-
-        application = connection.execute(
-            """
-            SELECT *
-            FROM applications
-            WHERE id = %s
-            """,
-            (
-                application_id,
-            )
-        ).fetchone()
-
-    finally:
-
-        connection.close()
-
+    application = get_application_by_id(application_id)
 
     if not application:
+        return "Application not found.", 404
 
-        return (
-            "Application not found.",
-            404
-        )
-
-
-    resume_filename = (
-        application["resume_filename"]
-    )
-
+    resume_filename = application.get("resume_filename")
 
     if not resume_filename:
-
-        return (
-            "No resume was uploaded.",
-            404
-        )
-
+        return "No resume was uploaded.", 404
 
     resume_path = os.path.join(
-        app.config["UPLOAD_FOLDER"],
-        resume_filename
+        UPLOAD_FOLDER,
+        resume_filename,
     )
 
-
-    if not os.path.isfile(
-        resume_path
-    ):
-
-        return (
-            "Resume file not found.",
-            404
-        )
-
+    if not os.path.isfile(resume_path):
+        return "Resume file not found.", 404
 
     return send_from_directory(
-        app.config["UPLOAD_FOLDER"],
+        UPLOAD_FOLDER,
         resume_filename,
-        as_attachment=True
+        as_attachment=True,
     )
+
+
+@app.route("/admin/download/resume/<int:application_id>")
+def admin_download_resume_legacy(application_id):
+    return admin_download_resume(application_id)
+
+
+# ==================================================
+# ADMIN DOWNLOAD APPLICATION PDF
+# ==================================================
+
+@app.route("/admin/download/application/<int:application_id>")
+def admin_download_application(application_id):
+    if not admin_logged_in():
+        return redirect(url_for("admin_login"))
+
+    application = get_application_by_id(application_id)
+
+    if not application:
+        return "Application not found.", 404
+
+    pdf_path = application_pdf_path(application_id)
+
+    if not os.path.isfile(pdf_path):
+        pdf_path = create_application_pdf(application)
+
+    return send_file(
+        pdf_path,
+        as_attachment=True,
+        download_name=f"Trekso_Application_{application_id}.pdf",
+    )
+
+
+@app.route("/admin/application/<int:application_id>/download")
+def admin_download_application_legacy(application_id):
+    return admin_download_application(application_id)
 
 
 # ==================================================
 # ADMIN EXPORT TO EXCEL
 # ==================================================
 
-@app.route(
-    "/admin-export-excel"
-)
+@app.route("/admin-export-excel")
 def admin_export_excel():
-
-    if not session.get(
-        "admin_logged_in"
-    ):
-
-        return redirect(
-            url_for(
-                "admin_login"
-            )
-        )
-
+    if not admin_logged_in():
+        return redirect(url_for("admin_login"))
 
     connection = get_db_connection()
 
-
     try:
-
         applications = connection.execute(
             """
             SELECT *
@@ -3534,249 +2131,174 @@ def admin_export_excel():
             ORDER BY id DESC
             """
         ).fetchall()
-
     finally:
-
         connection.close()
 
-
     workbook = Workbook()
-
     worksheet = workbook.active
-
     worksheet.title = "Applications"
 
-
     headings = [
-
         "Application ID",
-
         "Position",
-
         "Name",
-
         "Email",
-
         "Mobile",
-
         "Date of Birth",
-
         "Gender",
-
         "Qualification",
-
         "College Name",
-
         "University Name",
-
         "Branch",
-
         "Graduation Year",
-
         "Candidate Type",
-
         "Experience",
-
         "Skills",
-
         "Address",
-
         "Resume",
-
         "Status",
-
-        "Submitted On"
-
+        "Submitted On",
     ]
 
-
-    worksheet.append(
-        headings
-    )
-
+    worksheet.append(headings)
 
     for application in applications:
-
-        worksheet.append([
-
-            application["id"],
-
-            application["position"],
-
-            application["name"],
-
-            application["email"],
-
-            application["mobile"],
-
-            application["dob"],
-
-            application["gender"],
-
-            application["qualification"],
-
-            application["college_name"],
-
-            application["university_name"],
-
-            application["branch"],
-
-            application["graduation_year"],
-
-            application["candidate_type"],
-
-            application["experience"],
-
-            application["skills"],
-
-            application["address"],
-
-            application["resume_filename"],
-
-            application["status"],
-
-            application["created_at"]
-
-        ])
-
+        worksheet.append(
+            [
+                application.get("id"),
+                application.get("position"),
+                application.get("name"),
+                application.get("email"),
+                application.get("mobile"),
+                application.get("dob"),
+                application.get("gender"),
+                application.get("qualification"),
+                application.get("college_name"),
+                application.get("university_name"),
+                application.get("branch"),
+                application.get("graduation_year"),
+                application.get("candidate_type"),
+                application.get("experience"),
+                application.get("skills"),
+                application.get("address"),
+                application.get("resume_filename"),
+                application.get("status"),
+                application.get("created_at"),
+            ]
+        )
 
     column_widths = {
-
         "A": 15,
-
         "B": 20,
-
         "C": 25,
-
         "D": 30,
-
         "E": 18,
-
         "F": 15,
-
         "G": 12,
-
         "H": 20,
-
         "I": 38,
-
         "J": 30,
-
         "K": 25,
-
         "L": 18,
-
         "M": 18,
-
         "N": 25,
-
         "O": 35,
-
         "P": 40,
-
         "Q": 30,
-
         "R": 18,
-
-        "S": 22
-
+        "S": 22,
     }
 
-
     for column, width in column_widths.items():
-
-        worksheet.column_dimensions[
-            column
-        ].width = width
-
+        worksheet.column_dimensions[column].width = width
 
     worksheet.freeze_panes = "A2"
 
-
     excel_path = os.path.join(
         PDF_FOLDER,
-        "applications.xlsx"
+        "applications.xlsx",
     )
 
-
-    workbook.save(
-        excel_path
-    )
-
+    workbook.save(excel_path)
 
     return send_file(
         excel_path,
         as_attachment=True,
-        download_name="applications.xlsx"
+        download_name="applications.xlsx",
     )
+
+
+@app.route("/admin/export")
+def admin_export_alias():
+    return admin_export_excel()
+
+
+@app.route("/admin/export-excel")
+def admin_export_excel_alias():
+    return admin_export_excel()
+
+
+@app.route("/export-excel")
+def export_excel_alias():
+    return admin_export_excel()
 
 
 # ==================================================
 # ADMIN LOGOUT
 # ==================================================
 
-@app.route(
-    "/admin-logout"
-)
+@app.route("/admin-logout")
 def admin_logout():
-
     session.clear()
-
-    return redirect(
-        url_for(
-            "admin_login"
-        )
-    )
+    return redirect(url_for("admin_login"))
 
 
 # ==================================================
 # APPLICANT LOGOUT
 # ==================================================
 
-@app.route(
-    "/logout"
-)
+@app.route("/logout")
 def logout():
-
     session.clear()
-
-    return redirect(
-        url_for(
-            "login"
-        )
-    )
+    return redirect(url_for("login"))
 
 
 # ==================================================
-# FILE TOO LARGE
+# ERROR HANDLERS
 # ==================================================
 
 @app.errorhandler(413)
 def file_too_large(error):
+    return (
+        """
+        <h2 style="text-align:center;margin-top:100px;color:#ff4b00;">
+            Resume file is too large.
+        </h2>
+        <p style="text-align:center;">
+            Maximum allowed file size is 5 MB.
+        </p>
+        <p style="text-align:center;">
+            <a href="/apply">Go Back</a>
+        </p>
+        """,
+        413,
+    )
 
-    return """
-    <h2 style="
-        text-align:center;
-        margin-top:100px;
-        color:#ff4b00;
-    ">
-        Resume file is too large.
-    </h2>
 
-    <p style="
-        text-align:center;
-    ">
-        Maximum allowed file size is 5 MB.
-    </p>
+@app.errorhandler(500)
+def internal_server_error(error):
+    app.logger.exception("Unhandled internal server error.")
 
-    <p style="
-        text-align:center;
-    ">
-        <a href="/apply">
-            Go Back
-        </a>
-    </p>
-    """, 413
+    try:
+        return render_template(
+            "error.html",
+            error="An internal server error occurred. Please try again.",
+        ), 500
+    except Exception:
+        return (
+            "An internal server error occurred. Please try again.",
+            500,
+        )
 
 
 # ==================================================
@@ -3784,17 +2306,10 @@ def file_too_large(error):
 # ==================================================
 
 if __name__ == "__main__":
-
-    port = int(
-        os.environ.get(
-            "PORT",
-            5000
-        )
-    )
-
+    port = int(os.environ.get("PORT", "5000"))
 
     app.run(
         host="0.0.0.0",
         port=port,
-        debug=False
+        debug=False,
     )
