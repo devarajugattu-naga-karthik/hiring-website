@@ -1787,7 +1787,11 @@ def download_resume_legacy(application_id):
 # ==================================================
 
 @app.route("/download/application/<int:application_id>")
-def download_application(application_id):
+def download_application_by_id(application_id):
+    """
+    Download a specific application PDF for the logged-in applicant.
+    The application must belong to the current applicant.
+    """
     if not applicant_login_required():
         return redirect(url_for("login"))
 
@@ -1813,22 +1817,38 @@ def download_application(application_id):
     )
 
 
-@app.route("/download-application/<int:application_id>")
-def download_application_legacy(application_id):
-    return download_application(application_id)
-
-
+# Main endpoint used by the applicant dashboard/templates.
+# It finds the current applicant's application automatically.
 @app.route("/download-application")
-def download_my_application():
+def download_application():
     if not applicant_login_required():
         return redirect(url_for("login"))
 
-    application_ref = application_exists_for_user(session["user_id"])
+    application_ref = application_exists_for_user(
+        session["user_id"]
+    )
 
     if not application_ref:
         return "No application found.", 404
 
-    return download_application(application_ref["id"])
+    return download_application_by_id(
+        application_ref["id"]
+    )
+
+
+# Legacy ID-based route kept for compatibility.
+@app.route("/download-application/<int:application_id>")
+def download_application_legacy(application_id):
+    return download_application_by_id(
+        application_id
+    )
+
+
+# Compatibility endpoint for templates/code that use
+# url_for("download_my_application").
+@app.route("/download-my-application")
+def download_my_application():
+    return download_application()
 
 
 # ==================================================
