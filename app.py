@@ -40,9 +40,10 @@ from reportlab.platypus import (
 )
 
 import os
-import smtplib
 import random
 import html
+import requests
+import base64
 
 from datetime import (
     datetime,
@@ -107,6 +108,8 @@ FROM_NAME = os.environ.get(
     "FROM_NAME",
     "Trekso Careers",
 )
+
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "").strip()
 
 
 # ==================================================
@@ -288,6 +291,9 @@ def applicant_login_required():
 # ==================================================
 # SEND EMAIL
 # ==================================================
+# ==================================================
+# SEND EMAIL THROUGH BREVO HTTPS API
+# ==================================================
 
 def send_email(
     recipient_email,
@@ -297,106 +303,181 @@ def send_email(
     attachment_name=None,
 ):
     """
-    Build and send a Trekso email through Brevo SMTP.
+    Send Trekso email through Brevo HTTPS API only.
 
     Returns:
         True  -> email sent successfully
-        False -> email could not be sent
-
-    The SMTP connection has a short timeout so the Render Gunicorn
-    worker does not remain blocked indefinitely.
+        False -> email sending failed
     """
 
-    if not SMTP_LOGIN:
-        app.logger.error("SMTP_LOGIN is not configured.")
-        return False
+    brevo_api_key = os.environ.get(
+        "BREVO_API_KEY",
+        ""
+    ).strip()
 
-    if not SMTP_PASSWORD:
-        app.logger.error("SMTP_PASSWORD is not configured.")
+    if not brevo_api_key:
+        app.logger.error(
+            "BREVO_API_KEY is not configured."
+        )
         return False
 
     if not FROM_EMAIL:
-        app.logger.error("FROM_EMAIL is not configured.")
+        app.logger.error(
+            "FROM_EMAIL is not configured."
+        )
         return False
 
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = f"{FROM_NAME} <{FROM_EMAIL}>"
-    message["To"] = recipient_email
-
-    # Plain-text fallback.
-    message.set_content(body)
+    if not recipient_email:
+        app.logger.error(
+            "Recipient email is empty."
+        )
+        return False
 
     # --------------------------------------------------
-    # Trekso logo as inline CID image
+    # Trekso logo
     # --------------------------------------------------
 
-    logo_path = os.path.join(
-        BASE_DIR,
-        "static",
-        "images",
-        "trekso-logo.png",
+    logo_url = os.environ.get(
+        "LOGO_URL",
+        "https://trekso-hiring-website.onrender.com/static/images/trekso-logo.png",
     )
 
-    logo_cid = make_msgid(domain="trekso")
+    safe_body = html.escape(
+        str(body)
+    ).replace(
+        "\n",
+        "<br>"
+    )
 
-    safe_body = html.escape(str(body)).replace("\n", "<br>")
-    safe_subject = html.escape(str(subject))
+    safe_subject = html.escape(
+        str(subject)
+    )
+
+    safe_logo_url = html.escape(
+        logo_url,
+        quote=True,
+    )
+
+    # --------------------------------------------------
+    # HTML EMAIL
+    # --------------------------------------------------
 
     html_body = f"""
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>{safe_subject}</title>
+
 </head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,Helvetica,sans-serif;">
-    <div style="max-width:620px;margin:30px auto;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 5px 25px rgba(0,0,0,0.08);">
-        <div style="padding:25px 20px;text-align:center;border-bottom:1px solid #eeeeee;background:#ffffff;">
-            <img src="cid:{logo_cid[1:-1]}"
-                 alt="Trekso"
-                 style="max-width:190px;width:100%;height:auto;display:block;margin:0 auto;">
+
+<body style="
+    margin:0;
+    padding:0;
+    background:#f5f5f5;
+    font-family:Arial,Helvetica,sans-serif;
+">
+
+    <div style="
+        max-width:620px;
+        margin:30px auto;
+        background:#ffffff;
+        border-radius:14px;
+        overflow:hidden;
+        box-shadow:0 5px 25px rgba(0,0,0,0.08);
+    ">
+
+        <div style="
+            padding:25px 20px;
+            text-align:center;
+            border-bottom:1px solid #eeeeee;
+            background:#ffffff;
+        ">
+
+            <img
+                src="{safe_logo_url}"
+                alt="Trekso"
+                style="
+                    max-width:190px;
+                    width:100%;
+                    height:auto;
+                    display:block;
+                    margin:0 auto;
+                "
+            >
+
         </div>
 
-        <div style="padding:30px;color:#333333;font-size:15px;line-height:1.7;">
+        <div style="
+            padding:30px;
+            color:#333333;
+            font-size:15px;
+            line-height:1.7;
+        ">
+
             {safe_body}
+
         </div>
 
-        <div style="padding:18px;text-align:center;background:#111111;color:#ffffff;font-size:12px;">
-            © 2026 Trekso Careers. All rights reserved.
+        <div style="
+            padding:18px;
+            text-align:center;
+            background:#111111;
+            color:#ffffff;
+            font-size:12px;
+        ">
+
+            © 2026 Trekso Careers.
+            All rights reserved.
+
         </div>
+
     </div>
+
 </body>
 </html>
 """
 
-    message.add_alternative(html_body, subtype="html")
+    # --------------------------------------------------
+    # BREVO API PAYLOAD
+    # --------------------------------------------------
 
-    if os.path.isfile(logo_path):
-        try:
-            with open(logo_path, "rb") as logo_file:
-                logo_data = logo_file.read()
+    payload = {
+        "sender": {
+            "name": FROM_NAME,
+            "email": FROM_EMAIL,
+        },
 
-            html_part = message.get_body(preferencelist=("html",))
+        "to": [
+            {
+                "email": recipient_email,
+            }
+        ],
 
-            if html_part is not None:
-                html_part.add_related(
-                    logo_data,
-                    maintype="image",
-                    subtype="png",
-                    cid=logo_cid,
-                    filename="trekso-logo.png",
-                )
-        except Exception:
-            app.logger.exception("Could not attach Trekso email logo.")
+        "subject": subject,
+
+        "textContent": body,
+
+        "htmlContent": html_body,
+    }
 
     # --------------------------------------------------
-    # Optional PDF attachment
+    # PDF ATTACHMENT
     # --------------------------------------------------
 
     if attachment_path:
-        if not os.path.isfile(attachment_path):
+
+        if not os.path.isfile(
+            attachment_path
+        ):
             app.logger.error(
                 "Email attachment does not exist: %s",
                 attachment_path,
@@ -404,78 +485,119 @@ def send_email(
             return False
 
         try:
-            with open(attachment_path, "rb") as attachment_file:
-                file_data = attachment_file.read()
 
-            message.add_attachment(
-                file_data,
-                maintype="application",
-                subtype="pdf",
-                filename=(
-                    attachment_name
-                    or os.path.basename(attachment_path)
-                ),
-            )
+            with open(
+                attachment_path,
+                "rb"
+            ) as attachment_file:
+
+                encoded_file = base64.b64encode(
+                    attachment_file.read()
+                ).decode(
+                    "utf-8"
+                )
+
+            payload["attachment"] = [
+                {
+                    "content": encoded_file,
+                    "name": (
+                        attachment_name
+                        or os.path.basename(
+                            attachment_path
+                        )
+                    ),
+                }
+            ]
+
         except Exception:
-            app.logger.exception("Could not attach PDF to email.")
+
+            app.logger.exception(
+                "Could not prepare email attachment."
+            )
+
             return False
 
     # --------------------------------------------------
-    # Send through Brevo SMTP
+    # BREVO HTTPS API
     # --------------------------------------------------
 
     try:
-        with smtplib.SMTP(
-            SMTP_HOST,
-            SMTP_PORT,
-            timeout=10,
-        ) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(
-                SMTP_LOGIN,
-                SMTP_PASSWORD,
+
+        response = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+
+            headers={
+                "accept": "application/json",
+                "api-key": brevo_api_key,
+                "content-type": "application/json",
+            },
+
+            json=payload,
+
+            timeout=15,
+        )
+
+        # --------------------------------------------------
+        # SUCCESS
+        # --------------------------------------------------
+
+        if 200 <= response.status_code < 300:
+
+            app.logger.info(
+                "Brevo API email sent successfully to %s",
+                recipient_email,
             )
-            server.send_message(message)
 
-        app.logger.info(
-            "Email sent successfully to %s",
-            recipient_email,
-        )
-        return True
+            return True
 
-    except smtplib.SMTPAuthenticationError:
-        app.logger.exception(
-            "Brevo SMTP authentication failed."
+        # --------------------------------------------------
+        # BREVO ERROR
+        # --------------------------------------------------
+
+        app.logger.error(
+            "Brevo API rejected email. "
+            "Status=%s Response=%s",
+            response.status_code,
+            response.text,
         )
+
         return False
 
-    except smtplib.SMTPConnectError:
-        app.logger.exception(
-            "Could not connect to Brevo SMTP server."
+    # --------------------------------------------------
+    # TIMEOUT
+    # --------------------------------------------------
+
+    except requests.Timeout:
+
+        app.logger.error(
+            "Brevo API request timed out."
         )
+
         return False
 
-    except smtplib.SMTPException:
+    # --------------------------------------------------
+    # NETWORK ERROR
+    # --------------------------------------------------
+
+    except requests.RequestException:
+
         app.logger.exception(
-            "Brevo SMTP error occurred."
+            "Network error while connecting to Brevo API."
         )
+
         return False
 
-    except (TimeoutError, OSError):
-        app.logger.exception(
-            "Network error or timeout while connecting to Brevo SMTP."
-        )
-        return False
+    # --------------------------------------------------
+    # UNEXPECTED ERROR
+    # --------------------------------------------------
 
     except Exception:
+
         app.logger.exception(
             "Unexpected error while sending email."
         )
+
         return False
-
-
 # ==================================================
 # SEND OTP EMAIL
 # ==================================================
